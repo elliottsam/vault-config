@@ -4,7 +4,8 @@ import (
 	"log"
 )
 
-func (c *VaultClient) PolicyExist(name string) bool {
+// PolicyExists checks for the existence of a policy
+func (c *VCClient) PolicyExist(name string) bool {
 	pol, err := c.Sys().ListPolicies()
 	if err != nil {
 		log.Fatalf("Error listing policies: %v", err)
@@ -19,7 +20,8 @@ func (c *VaultClient) PolicyExist(name string) bool {
 	return false
 }
 
-func (c *VaultClient) PolicyAdd(p policies) error {
+// PolicyAdd adds a new policy
+func (c *VCClient) PolicyAdd(p policies) error {
 	err := c.Sys().PutPolicy(p.Name, p.Rules)
 	if err != nil {
 		return err

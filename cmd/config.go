@@ -65,7 +65,7 @@ to quickly create a Cobra application.`,
 
 		}
 
-		var vconf vault.VaultConfig
+		var vconf vault.VCConfig
 		err = hcl.Unmarshal(e.PlainText, &vconf)
 		if err != nil {
 			log.Fatalf("Error reading HCL: %v", err)

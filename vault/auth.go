@@ -6,7 +6,8 @@ import (
 	"strings"
 )
 
-func (c *VaultClient) AuthExist(name string) bool {
+// AuthExist checks for the existance of an Auth mount
+func (c *VCClient) AuthExist(name string) bool {
 	auth, err := c.Sys().ListAuth()
 	if err != nil {
 		return false
@@ -20,11 +21,12 @@ func (c *VaultClient) AuthExist(name string) bool {
 	return false
 }
 
-func (a *auth) Path() string {
+func (a *auth) path() string {
 	return fmt.Sprintf("auth/%s", a.Type)
 }
 
-func (c *VaultClient) AuthEnable(a auth) error {
+// AuthEnable enables an auth backend
+func (c *VCClient) AuthEnable(a auth) error {
 	if err := c.Sys().EnableAuth(a.Type, a.Type, a.Description); err != nil {
 		return err
 	}
@@ -32,21 +34,22 @@ func (c *VaultClient) AuthEnable(a auth) error {
 	return nil
 }
 
-func (c *VaultClient) AuthConfigure(auth auth) error {
-	confpath := fmt.Sprintf("%s/config", auth.Path())
+// AuthConfigure sets the configuration for an auth backend
+func (c *VCClient) AuthConfigure(auth auth) error {
+	confpath := fmt.Sprintf("%s/config", auth.path())
 	_, err := c.Logical().Write(confpath, auth.AuthConfig)
 	if err != nil {
 		return fmt.Errorf("Error writing auth config to mount: %v", err)
 	}
 	for _, v := range auth.Users {
-		path := fmt.Sprintf("%s/users/%s", auth.Path(), v.Name)
+		path := fmt.Sprintf("%s/users/%s", auth.path(), v.Name)
 		_, err := c.Logical().Write(path, v.Options)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	c.TuneMount(auth.Path(), auth.MountConfig)
+	c.TuneMount(auth.path(), auth.MountConfig)
 
 	return nil
 }

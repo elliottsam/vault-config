@@ -14,11 +14,13 @@ import (
 	"time"
 )
 
-const (
-	wrapped_cipher_regex = `@encrypted_data\((.*)\)`
-	wrapped_hmac_regex   = `@hmac\((.*)\)`
+var (
+	wrappedCipherRegex = regexp.MustCompile(`@encrypted_data\((.*)\)`)
+	wrappedHmacRegex   = regexp.MustCompile(`@hmac\((.*)\)`)
 )
 
+// EncryptionObject contains all the variables and methods
+// associated with encrypting and decrypting data
 type EncryptionObject struct {
 	Key         string
 	CipherText  []byte
@@ -39,7 +41,7 @@ func (e *EncryptionObject) Encrypt() error {
 	e.CipherText = make([]byte, aes.BlockSize+len(e.PlainText))
 	iv := e.CipherText[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		return fmt.Errorf("Error creating iv:", err)
+		return fmt.Errorf("Error creating iv: %v", err)
 	}
 
 	stream := cipher.NewCFBEncrypter(block, iv)
@@ -90,6 +92,8 @@ func CreateHMAC(key string, data []byte) ([]byte, error) {
 	return h.Sum(nil), nil
 }
 
+// WrapCrypto wraps both cipher text and hmac into a single string
+// to be written to disk
 func (e *EncryptionObject) WrapCrypto() {
 	b64cipher := base64.StdEncoding.EncodeToString(e.CipherText)
 	b64hmac := base64.StdEncoding.EncodeToString(e.HMAC)
@@ -97,11 +101,11 @@ func (e *EncryptionObject) WrapCrypto() {
 	e.WrappedData = fmt.Sprintf("@encrypted_data(%s)\n@hmac(%s)", b64cipher, b64hmac)
 }
 
+//UnwrapCrypto unwraps cipher text and hmac to allow decryption
 func (e *EncryptionObject) UnwrapCrypto() error {
 	var err error
 
-	r := regexp.MustCompile(wrapped_cipher_regex)
-	b64cipher := r.FindStringSubmatch(e.WrappedData)
+	b64cipher := wrappedCipherRegex.FindStringSubmatch(e.WrappedData)
 	if b64cipher == nil || len(b64cipher) < 1 || b64cipher[1] == "" {
 		return fmt.Errorf("unwrapping cipher text")
 	}
@@ -111,8 +115,7 @@ func (e *EncryptionObject) UnwrapCrypto() error {
 		return fmt.Errorf("decoding base64 cipher: %v", err)
 	}
 
-	r = regexp.MustCompile(wrapped_hmac_regex)
-	b64hmac := r.FindStringSubmatch(e.WrappedData)
+	b64hmac := wrappedHmacRegex.FindStringSubmatch(e.WrappedData)
 	if b64hmac == nil || len(b64hmac) < 1 || b64hmac[1] == "" {
 		return fmt.Errorf("unwrapping HMAC text")
 	}
@@ -125,7 +128,7 @@ func (e *EncryptionObject) UnwrapCrypto() error {
 	return nil
 }
 
-// RandomPassword returns a random password of specified length
+// RandomKey returns a random password of specified length
 func RandomKey(n int) string {
 	const chars = `abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789`
 	b := make([]byte, n)

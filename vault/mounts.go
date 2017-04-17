@@ -8,7 +8,8 @@ import (
 	"github.com/fatih/structs"
 )
 
-func (c *VaultClient) MountExist(name string) bool {
+// MountExist checks for the existence of specified mount
+func (c *VCClient) MountExist(name string) bool {
 	if !strings.HasSuffix(name, "/") {
 		name = fmt.Sprintf("%s/", name)
 	}
@@ -26,7 +27,8 @@ func (c *VaultClient) MountExist(name string) bool {
 	return true
 }
 
-func (c *VaultClient) Mount(path string, mountInfo *MountInput) error {
+// Mount creates a new mount on Vault server
+func (c *VCClient) Mount(path string, mountInfo *mountInput) error {
 	body := structs.Map(mountInfo)
 
 	r := c.NewRequest("POST", fmt.Sprintf("/v1/sys/mounts/%s", path))
@@ -43,7 +45,8 @@ func (c *VaultClient) Mount(path string, mountInfo *MountInput) error {
 	return nil
 }
 
-func (c *VaultClient) TuneMount(path string, config MountConfigInput) error {
+// TuneMount will configure a mounts settings
+func (c *VCClient) TuneMount(path string, config mountConfigInput) error {
 	body := structs.Map(config)
 	r := c.NewRequest("POST", fmt.Sprintf("/v1/sys/mounts/%s/tune", path))
 	if err := r.SetJSONBody(body); err != nil {
