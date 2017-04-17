@@ -2,11 +2,14 @@ package vault
 
 import "github.com/hashicorp/vault/api"
 
-type VaultClient struct {
+// VCClient is a wrapper around the Vault api.Client
+type VCClient struct {
 	*api.Client
 }
 
-type VaultConfig struct {
+// VCConfig contains the Vault configuration that will be
+// applied to the server
+type VCConfig struct {
 	Mount  []mounts   `hcl:"mounts,ommitempty"`
 	Policy []policies `hcl:"policies,ommitempty"`
 	Auth   []auth     `hcl:"auth,ommitempty"`
@@ -14,16 +17,16 @@ type VaultConfig struct {
 
 type mounts struct {
 	Path   string      `hcl:"path,ommitempty"`
-	Config *MountInput `hcl:"config,ommitempty"`
+	Config *mountInput `hcl:"config,ommitempty"`
 }
 
-type MountInput struct {
+type mountInput struct {
 	Type        string           `hcl:"type" structs:"type"`
 	Description string           `hcl:"description" structs:"description"`
-	Config      MountConfigInput `hcl:"mountconfig" structs:"config"`
+	Config      mountConfigInput `hcl:"mountconfig" structs:"config"`
 }
 
-type MountConfigInput struct {
+type mountConfigInput struct {
 	DefaultLeaseTTL string `hcl:"default_lease_ttl" structs:"default_lease_ttl" mapstructure:"default_lease_ttl"`
 	MaxLeaseTTL     string `hcl:"max_lease_ttl" structs:"max_lease_ttl" mapstructure:"max_lease_ttl"`
 }
@@ -34,7 +37,6 @@ type policies struct {
 }
 
 type auth struct {
-	//Path        string                 `hcl:"path,ommitempty"`
 	Type        string `hcl:"type,ommitempty"`
 	Description string `hcl:"description,ommitempty"`
 	Users       []struct {
@@ -45,15 +47,16 @@ type auth struct {
 		Name    string                 `hcl:"name,ommitempty"`
 		Options map[string]interface{} `hcl:"options,ommitempty"`
 	} `hcl:"groups,ommitempty"`
-	MountConfig MountConfigInput       `hcl:"mountconfig,ommitempty"`
+	MountConfig mountConfigInput       `hcl:"mountconfig,ommitempty"`
 	AuthConfig  map[string]interface{} `hcl:"authconfig,ommitempty"`
 }
 
-func NewClient(c *api.Config) (*VaultClient, error) {
+// NewClient returns a Vault client
+func NewClient(c *api.Config) (*VCClient, error) {
 	client, err := api.NewClient(c)
 	if err != nil {
 		return nil, err
 	}
 
-	return &VaultClient{client}, nil
+	return &VCClient{client}, nil
 }

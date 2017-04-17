@@ -13,7 +13,6 @@ mounts = [{
   config = {
     type = "generic"
     description = "Example App 2"
-
   }
 }]
 
