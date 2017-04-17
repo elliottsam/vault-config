@@ -47,11 +47,3 @@ func Execute() {
 		os.Exit(-1)
 	}
 }
-
-func init() {
-	cobra.OnInitialize(initConfig)
-}
-
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-}

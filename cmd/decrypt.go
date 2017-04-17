@@ -61,5 +61,5 @@ func init() {
 	decryptCmd.Flags().StringVarP(&input, "input", "i", "config.hcl.enc", "Name of encrypted file to decrypt")
 	decryptCmd.Flags().StringVarP(&output, "output", "o", "config.hcl", "Name of file to output")
 	decryptCmd.Flags().StringVarP(&key, "key", "k", "", "Key to use for decryption")
-	encryptCmd.Flags().BoolVarP(&deleteFile, "delete", "d", false, "Delete original file after decryption, if successful")
+	decryptCmd.Flags().BoolVarP(&deleteFile, "delete", "d", false, "Delete original file after decryption, if successful")
 }

@@ -9,6 +9,16 @@ mounts = [{
     }
   }
 },{
+  path = "pki"
+  config = {
+    type = "pki"
+    description = "My cool PKI backend"
+    mountconfig = {
+      default_lease_ttl = "768h"
+      max_lease_ttl = "768h"
+    }
+  }
+},{
   path = "example/app2"
   config = {
     type = "generic"
