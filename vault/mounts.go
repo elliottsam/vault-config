@@ -3,9 +3,8 @@ package vault
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"strings"
-
-	"github.com/fatih/structs"
 )
 
 // MountExist checks for the existence of specified mount
@@ -28,10 +27,10 @@ func (c *VCClient) MountExist(name string) bool {
 }
 
 // Mount creates a new mount on Vault server
-func (c *VCClient) Mount(path string, mountInfo *mountInput) error {
-	body := structs.Map(mountInfo)
+func (c *VCClient) Mount(path string, config map[string]string) error {
+	body := config
 
-	r := c.NewRequest("POST", fmt.Sprintf("/v1/sys/mounts/%s", path))
+	r := c.NewRequest(http.MethodPost, fmt.Sprintf("/v1/sys/mounts/%s", path))
 	if err := r.SetJSONBody(body); err != nil {
 		return err
 	}
@@ -46,8 +45,8 @@ func (c *VCClient) Mount(path string, mountInfo *mountInput) error {
 }
 
 // TuneMount will configure a mounts settings
-func (c *VCClient) TuneMount(path string, config mountConfigInput) error {
-	body := structs.Map(config)
+func (c *VCClient) TuneMount(path string, config map[string]interface{}) error {
+	body := config
 	r := c.NewRequest("POST", fmt.Sprintf("/v1/sys/mounts/%s/tune", path))
 	if err := r.SetJSONBody(body); err != nil {
 		return err

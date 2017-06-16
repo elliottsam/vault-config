@@ -18,6 +18,8 @@ import (
 	"io/ioutil"
 	"log"
 
+	"fmt"
+
 	"github.com/elliottsam/vault-config/crypto"
 	"github.com/elliottsam/vault-config/vault"
 	"github.com/hashicorp/hcl"
@@ -65,38 +67,43 @@ to quickly create a Cobra application.`,
 
 		}
 
-		var vconf vault.VCConfig
+		var vconf vault.Config
 		err = hcl.Unmarshal(e.PlainText, &vconf)
 		if err != nil {
-			log.Fatalf("Error reading HCL: %v", err)
+			log.Fatal(fmt.Errorf("Error reading HCL: %v", err))
 		}
-
-		for _, m := range vconf.Mount {
+		for _, m := range vconf.Mounts {
 			if ok := client.MountExist(m.Path); !ok {
-				err := client.Mount(m.Path, m.Config)
+				err := client.Mount(m.Path, vault.ConvertMapStringString(m.Config))
 				if err != nil {
 					log.Fatalf("Error creating mount: %v", err)
 				}
 			}
-			if err := client.TuneMount(m.Path, m.Config.Config); err != nil {
+			if err := client.TuneMount(m.Path, vault.ConvertMapStringInterface(m.MountConfig)); err != nil {
 				log.Fatal(err)
 			}
 		}
 
-		for _, p := range vconf.Policy {
+		for _, p := range vconf.Policies {
 			if !client.PolicyExist(p.Name) {
-				client.PolicyAdd(p)
+				if err := client.PolicyAdd(p); err != nil {
+					log.Fatal(err)
+				}
 			}
 		}
 
-		for _, a := range vconf.Auth {
-			if !client.AuthExist(a.Type) {
-				err := client.AuthEnable(a)
-				if err != nil {
-					log.Fatalf("Error enabling auth mount: %v", err)
-				}
+		if err := vault.EnableAndConfigure(vconf.Auth.Ldap, client); err != nil {
+			log.Fatal(fmt.Errorf("Error creating Ldap auth:\n%s", err))
+		}
+
+		if err := vault.EnableAndConfigure(vconf.Auth.Github, client); err != nil {
+			log.Fatal(fmt.Errorf("Error creating Github auth:\n%s", err))
+		}
+
+		for _, v := range vconf.TokenRoles {
+			if err := client.WriteTokenRole(v.Name, vault.ConvertMapStringInterface(v.Options)); err != nil {
+				log.Fatal("Error writing token role: %v", err)
 			}
-			client.AuthConfigure(a)
 		}
 	},
 }

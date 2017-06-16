@@ -1,0 +1,87 @@
+{
+  "auth": [
+    {
+      "authmount": {
+        "type": "ldap",
+        "description": "LDAP Auth backend config",
+        "groups": [
+          {
+            "name": "groupa",
+            "options": [
+              {
+                "policies": "example-policy-1"
+              }
+            ]
+          }
+        ],
+        "users": [
+          {
+            "name": "same",
+            "options": [
+              {
+                "policies": "example-policy-1,example-policy-2"
+              }
+            ]
+          }
+        ]
+      },
+      "mountconfig": {
+        "default_lease_ttl": "1h",
+        "max_lease_ttl": "24h"
+      },
+      "authconfig":
+        {
+          "binddn": "CN=SamE,CN=Users,DC=test,DC=local",
+          "bindpass": "z",
+          "url": "ldap://10.255.0.30",
+          "userdn": "CN=Users,DC=test,DC=local"
+        }
+    }
+  ],
+  "mounts": [
+    {
+      "path": "example/app1",
+      "config":
+        {
+          "description": "Example App 1",
+          "mountconfig":
+            {
+              "default_lease_ttl": "20h",
+              "max_lease_ttl": "768h"
+            },
+          "type": "generic"
+        }
+    },
+    {
+      "path": "example/app2",
+      "config":
+        {
+          "description": "Example App 2",
+          "type": "generic"
+        }
+    },
+    {
+      "path": "pki",
+      "config":
+        {
+          "description": "My cool PKI backend",
+          "mountconfig":
+            {
+              "default_lease_ttl": "768h",
+              "max_lease_ttl": "768h"
+            },
+          "type": "pki"
+        }
+    }
+  ],
+  "policies": [
+    {
+      "name": "example-policy-1",
+      "rules": "# Allow to make changes to /example/app1 mount\npath \"example/app1\" {\n    capabilities = [\"create\", \"read\", \"update\", \"delete\", \"list\"]\n}\n"
+    },
+    {
+      "name": "example-policy-2",
+      "rules": "# Allow to make changes to /example/app2 mount\npath \"example/app2\" {\n    capabilities = [\"create\", \"read\", \"update\", \"delete\", \"list\"]\n}\n"
+    }
+  ]
+}

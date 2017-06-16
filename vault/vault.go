@@ -7,48 +7,50 @@ type VCClient struct {
 	*api.Client
 }
 
-// VCConfig contains the Vault configuration that will be
+// Config contains the Vault configuration that will be
 // applied to the server
-type VCConfig struct {
-	Mount  []mounts   `hcl:"mounts,ommitempty"`
-	Policy []policies `hcl:"policies,ommitempty"`
-	Auth   []auth     `hcl:"auth,ommitempty"`
+type Config struct {
+	Mounts     []Mount     `hcl:"mount"`
+	Policies   []Policy    `hcl:"policy"`
+	TokenRoles []TokenRole `hcl:"token_role"`
+	Auth       Auth        `hcl:"auth"`
 }
 
-type mounts struct {
-	Path   string      `hcl:"path,ommitempty"`
-	Config *mountInput `hcl:"config,ommitempty"`
+type Mount struct {
+	Name   string `hcl:",key"`
+	Path   string `hcl:"path"`
+	Config struct {
+		PathType    string `hcl:"type" mapstructure:"type"`
+		Description string `hcl:"description" mapstructure:"description"`
+	} `hcl:"config"`
+	MountConfig struct {
+		DefaultLeaseTTL string `hcl:"default_lease_ttl" mapstructure:"default_lease_ttl"`
+		MaxLeaseTTL     string `hcl:"max_lease_ttl" mapstructure:"max_lease_ttl"`
+		ForceNoCache    bool   `hcl:"force_no_cache" mapstructure:"force_no_cache"`
+	} `hcl:"mountconfig"`
 }
 
-type mountInput struct {
-	Type        string           `hcl:"type" structs:"type"`
-	Description string           `hcl:"description" structs:"description"`
-	Config      mountConfigInput `hcl:"mountconfig" structs:"config"`
+type Policy struct {
+	Name  string `hcl:",key"`
+	Rules string `hcl:"rules"`
 }
 
-type mountConfigInput struct {
-	DefaultLeaseTTL string `hcl:"default_lease_ttl" structs:"default_lease_ttl" mapstructure:"default_lease_ttl"`
-	MaxLeaseTTL     string `hcl:"max_lease_ttl" structs:"max_lease_ttl" mapstructure:"max_lease_ttl"`
+type Auth struct {
+	Ldap   *Ldap   `hcl:"ldap"`
+	Github *Github `hcl:"github"`
 }
 
-type policies struct {
-	Name  string `hcl:"name,ommitempty"`
-	Rules string `hcl:"rules,ommitempty"`
-}
-
-type auth struct {
-	Type        string `hcl:"type,ommitempty"`
-	Description string `hcl:"description,ommitempty"`
-	Users       []struct {
-		Name    string                 `hcl:"name,ommitempty"`
-		Options map[string]interface{} `hcl:"options,ommitempty"`
-	} `hcl:"users,ommitempty"`
-	Groups []struct {
-		Name    string                 `hcl:"name,ommitempty"`
-		Options map[string]interface{} `hcl:"options,ommitempty"`
-	} `hcl:"groups,ommitempty"`
-	MountConfig mountConfigInput       `hcl:"mountconfig,ommitempty"`
-	AuthConfig  map[string]interface{} `hcl:"authconfig,ommitempty"`
+type TokenRole struct {
+	Name    string `hcl:",key"`
+	Options struct {
+		AllowedPolicies    string `hcl:"allowed_policies" mapstructure:"allowed_policies"`
+		DisallowedPolicies string `hcl:"disallowed_policies" mapstructure:"disallowed_policies"`
+		ExplicitMaxTTL     int    `hcl:"explicit_max_ttl" mapstructure:"explicit_max_ttl"`
+		Orphan             bool   `hcl:"orphan" mapstructure:"orphan"`
+		PathSuffix         string `hcl:"path_suffix" mapstructure:"path_suffix"`
+		Period             int    `hcl:"period" mapstructure:"period"`
+		Renewable          bool   `hcl:"renewable" mapstructure:"renewable"`
+	} `hcl:"options"`
 }
 
 // NewClient returns a Vault client

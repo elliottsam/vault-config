@@ -21,7 +21,7 @@ func (c *VCClient) PolicyExist(name string) bool {
 }
 
 // PolicyAdd adds a new policy
-func (c *VCClient) PolicyAdd(p policies) error {
+func (c *VCClient) PolicyAdd(p Policy) error {
 	err := c.Sys().PutPolicy(p.Name, p.Rules)
 	if err != nil {
 		return err

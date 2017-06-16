@@ -2,9 +2,19 @@ package vault
 
 import (
 	"fmt"
-	"log"
 	"strings"
 )
+
+// AuthType defines an interface for dealing with Auth backends
+type AuthType interface {
+	Describe() string
+	GetType() string
+	//AConfig() map[string]interface{}
+	Configure(c *VCClient) error
+	TuneMount(c *VCClient, path string) error
+	WriteUsers(c *VCClient) error
+	WriteGroups(c *VCClient) error
+}
 
 // AuthExist checks for the existance of an Auth mount
 func (c *VCClient) AuthExist(name string) bool {
@@ -21,13 +31,14 @@ func (c *VCClient) AuthExist(name string) bool {
 	return false
 }
 
-func (a *auth) path() string {
-	return fmt.Sprintf("auth/%s", a.Type)
+// Path will return the path of an Auth backend
+func Path(a AuthType) string {
+	return fmt.Sprintf("auth/%s", a.GetType())
 }
 
 // AuthEnable enables an auth backend
-func (c *VCClient) AuthEnable(a auth) error {
-	if err := c.Sys().EnableAuth(a.Type, a.Type, a.Description); err != nil {
+func (c *VCClient) AuthEnable(a AuthType) error {
+	if err := c.Sys().EnableAuth(a.GetType(), a.GetType(), a.Describe()); err != nil {
 		return err
 	}
 
@@ -35,21 +46,35 @@ func (c *VCClient) AuthEnable(a auth) error {
 }
 
 // AuthConfigure sets the configuration for an auth backend
-func (c *VCClient) AuthConfigure(auth auth) error {
-	confpath := fmt.Sprintf("%s/config", auth.path())
-	_, err := c.Logical().Write(confpath, auth.AuthConfig)
-	if err != nil {
-		return fmt.Errorf("Error writing auth config to mount: %v", err)
+func (c *VCClient) AuthConfigure(a AuthType) error {
+	if err := a.WriteUsers(c); err != nil {
+		return err
 	}
-	for _, v := range auth.Users {
-		path := fmt.Sprintf("%s/users/%s", auth.path(), v.Name)
-		_, err := c.Logical().Write(path, v.Options)
-		if err != nil {
-			log.Fatal(err)
-		}
+	if err := a.WriteGroups(c); err != nil {
+		return err
+	}
+	if err := a.TuneMount(c, Path(a)); err != nil {
+		return err
 	}
 
-	c.TuneMount(auth.path(), auth.MountConfig)
+	if err := a.Configure(c); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func EnableAndConfigure(a AuthType, c *VCClient) error {
+	if a != nil {
+		if !c.AuthExist(a.GetType()) {
+			if err := c.AuthEnable(a); err != nil {
+				return fmt.Errorf("Error enabling auth mount: %v", err)
+			}
+		}
+		if err := c.AuthConfigure(a); err != nil {
+			return fmt.Errorf("Error configuring auth mount: %v", err)
+		}
+	}
 
 	return nil
 }
