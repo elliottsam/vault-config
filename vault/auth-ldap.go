@@ -73,3 +73,11 @@ func (l Ldap) Configure(c *VCClient) error {
 
 	return nil
 }
+
+func (l Ldap) getAuthConfig() map[string]interface{} {
+	return l.AuthConfig
+}
+
+func (l Ldap) getAuthMountConfig() map[string]interface{} {
+	return ConvertMapStringInterface(l.MountConfig)
+}

@@ -9,6 +9,8 @@ import (
 type AuthType interface {
 	Describe() string
 	GetType() string
+	getAuthConfig() map[string]interface{}
+	getAuthMountConfig() map[string]interface{}
 	//AConfig() map[string]interface{}
 	Configure(c *VCClient) error
 	TuneMount(c *VCClient, path string) error

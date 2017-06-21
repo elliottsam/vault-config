@@ -76,3 +76,11 @@ func (g Github) Configure(c *VCClient) error {
 
 	return nil
 }
+
+func (g Github) getAuthConfig() map[string]interface{} {
+	return g.AuthConfig
+}
+
+func (g Github) getAuthMountConfig() map[string]interface{} {
+	return ConvertMapStringInterface(g.MountConfig)
+}

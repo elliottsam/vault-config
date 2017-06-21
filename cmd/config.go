@@ -79,7 +79,7 @@ to quickly create a Cobra application.`,
 					log.Fatalf("Error creating mount: %v", err)
 				}
 			}
-			if err := client.TuneMount(m.Path, vault.ConvertMapStringInterface(m.MountConfig)); err != nil {
+			if err := client.TuneMount(m.Path, vault.ConvertMapStringInterface(m.Config.MountConfig)); err != nil {
 				log.Fatal(err)
 			}
 		}

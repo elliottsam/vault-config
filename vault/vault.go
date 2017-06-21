@@ -22,12 +22,11 @@ type Mount struct {
 	Config struct {
 		PathType    string `hcl:"type" mapstructure:"type"`
 		Description string `hcl:"description" mapstructure:"description"`
+		MountConfig struct {
+			DefaultLeaseTTL string `hcl:"default_lease_ttl" mapstructure:"default_lease_ttl"`
+			MaxLeaseTTL     string `hcl:"max_lease_ttl" mapstructure:"max_lease_ttl"`
+		} `hcl:"mountconfig"`
 	} `hcl:"config"`
-	MountConfig struct {
-		DefaultLeaseTTL string `hcl:"default_lease_ttl" mapstructure:"default_lease_ttl"`
-		MaxLeaseTTL     string `hcl:"max_lease_ttl" mapstructure:"max_lease_ttl"`
-		ForceNoCache    bool   `hcl:"force_no_cache" mapstructure:"force_no_cache"`
-	} `hcl:"mountconfig"`
 }
 
 type Policy struct {

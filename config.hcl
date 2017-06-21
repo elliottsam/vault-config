@@ -1,36 +1,36 @@
 mount "app1" {
   path = "example/app1"
-  config = {
+  config {
     type = "generic"
     description = "Example App 1"
-  }
-  mountconfig {
-    default_lease_ttl = "20h"
-    max_lease_ttl = "768h"
+    mountconfig {
+      default_lease_ttl = "20h"
+      max_lease_ttl = "768h"
+    }
   }
 }
 
 mount "pki" {
   path = "pki"
-  config = {
+  config {
     type = "pki"
     description = "My cool PKI backend"
-  }
-  mountconfig {
-    default_lease_ttl = "768h"
-    max_lease_ttl = "768h"
+    mountconfig {
+      default_lease_ttl = "768h"
+      max_lease_ttl = "768h"
+    }
   }
 }
 
 mount "app2" {
   path = "example/app2"
-  config = {
+  config {
     type = "generic"
     description = "Example App 2"
-  }
-  mountconfig {
-    default_lease_ttl = "1h"
-    max_lease_ttl = "24h"
+    mountconfig {
+      default_lease_ttl = "1h"
+      max_lease_ttl = "24h"
+    }
   }
 }
 
