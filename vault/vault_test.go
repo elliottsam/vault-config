@@ -56,7 +56,7 @@ func (vsc *vaultServerConfigTestSuite) TestVCClient_Mounts() {
 	// Test creating new mounts from config
 	for _, v := range vc.Mounts {
 		assert.False(vsc.T(), vsc.vtc.MountExist(v.Path), "Mount should not exist at beginning of test: ", v.Path)
-		err := vsc.vtc.Mount(v.Path, ConvertMapStringString(v.Config))
+		err := vsc.vtc.Mount(v.Path, ConvertMapStringInterface(v.Config))
 		assert.NoError(vsc.T(), err, "Creating mount should not cause an error: ", err)
 		assert.True(vsc.T(), vsc.vtc.MountExist(v.Path), "Mount should exist after creation: ", v.Path)
 	}

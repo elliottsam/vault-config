@@ -67,15 +67,13 @@ func (c *VCClient) AuthConfigure(a AuthType) error {
 }
 
 func EnableAndConfigure(a AuthType, c *VCClient) error {
-	if a != nil {
-		if !c.AuthExist(a.GetType()) {
-			if err := c.AuthEnable(a); err != nil {
-				return fmt.Errorf("Error enabling auth mount: %v", err)
-			}
+	if !c.AuthExist(a.GetType()) {
+		if err := c.AuthEnable(a); err != nil {
+			return fmt.Errorf("Error enabling auth mount: %v", err)
 		}
-		if err := c.AuthConfigure(a); err != nil {
-			return fmt.Errorf("Error configuring auth mount: %v", err)
-		}
+	}
+	if err := c.AuthConfigure(a); err != nil {
+		return fmt.Errorf("Error configuring auth mount: %v", err)
 	}
 
 	return nil

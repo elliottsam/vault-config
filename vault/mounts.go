@@ -27,7 +27,7 @@ func (c *VCClient) MountExist(name string) bool {
 }
 
 // Mount creates a new mount on Vault server
-func (c *VCClient) Mount(path string, config map[string]string) error {
+func (c *VCClient) Mount(path string, config map[string]interface{}) error {
 	body := config
 
 	r := c.NewRequest(http.MethodPost, fmt.Sprintf("/v1/sys/mounts/%s", path))

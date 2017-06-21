@@ -74,7 +74,7 @@ to quickly create a Cobra application.`,
 		}
 		for _, m := range vconf.Mounts {
 			if ok := client.MountExist(m.Path); !ok {
-				err := client.Mount(m.Path, vault.ConvertMapStringString(m.Config))
+				err := client.Mount(m.Path, vault.ConvertMapStringInterface(m.Config))
 				if err != nil {
 					log.Fatalf("Error creating mount: %v", err)
 				}
@@ -92,12 +92,16 @@ to quickly create a Cobra application.`,
 			}
 		}
 
-		if err := vault.EnableAndConfigure(vconf.Auth.Ldap, client); err != nil {
-			log.Fatal(fmt.Errorf("Error creating Ldap auth:\n%s", err))
+		if vconf.Auth.Ldap != nil {
+			if err := vault.EnableAndConfigure(vconf.Auth.Ldap, client); err != nil {
+				log.Fatal(fmt.Errorf("Error creating Ldap auth:\n%s", err))
+			}
 		}
 
-		if err := vault.EnableAndConfigure(vconf.Auth.Github, client); err != nil {
-			log.Fatal(fmt.Errorf("Error creating Github auth:\n%s", err))
+		if vconf.Auth.Github != nil {
+			if err := vault.EnableAndConfigure(vconf.Auth.Github, client); err != nil {
+				log.Fatal(fmt.Errorf("Error creating Github auth:\n%s", err))
+			}
 		}
 
 		for _, v := range vconf.TokenRoles {

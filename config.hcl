@@ -56,7 +56,7 @@ EOF
 token_role "example_period_token_role" {
   options {
     allowed_policies = "example-policy-1,example-policy-2"
-    period = 20
+    period = "20h"
     renewable = true
   }
 }

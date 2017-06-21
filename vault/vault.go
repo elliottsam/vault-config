@@ -42,13 +42,13 @@ type Auth struct {
 type TokenRole struct {
 	Name    string `hcl:",key"`
 	Options struct {
-		AllowedPolicies    string `hcl:"allowed_policies" mapstructure:"allowed_policies"`
-		DisallowedPolicies string `hcl:"disallowed_policies" mapstructure:"disallowed_policies"`
-		ExplicitMaxTTL     int    `hcl:"explicit_max_ttl" mapstructure:"explicit_max_ttl"`
-		Orphan             bool   `hcl:"orphan" mapstructure:"orphan"`
-		PathSuffix         string `hcl:"path_suffix" mapstructure:"path_suffix"`
-		Period             int    `hcl:"period" mapstructure:"period"`
-		Renewable          bool   `hcl:"renewable" mapstructure:"renewable"`
+		AllowedPolicies    string      `hcl:"allowed_policies" mapstructure:"allowed_policies"`
+		DisallowedPolicies string      `hcl:"disallowed_policies" mapstructure:"disallowed_policies"`
+		ExplicitMaxTTL     interface{} `hcl:"explicit_max_ttl" mapstructure:"explicit_max_ttl"`
+		Orphan             bool        `hcl:"orphan" mapstructure:"orphan"`
+		PathSuffix         string      `hcl:"path_suffix" mapstructure:"path_suffix"`
+		Period             interface{} `hcl:"period" mapstructure:"period"`
+		Renewable          bool        `hcl:"renewable" mapstructure:"renewable"`
 	} `hcl:"options"`
 }
 
