@@ -225,7 +225,7 @@ func JoinBytes(dst, src []byte) []byte {
 
 func GetPassword() ([]byte, error) {
 	fmt.Print("Please enter key: ")
-	bytesB64Key, err := terminal.ReadPassword(syscall.Stdin)
+	bytesB64Key, err := terminal.ReadPassword(int(syscall.Stdin))
 	if err != nil {
 		return nil, fmt.Errorf("Error reading encryption key from terminal: %v", err)
 	}
