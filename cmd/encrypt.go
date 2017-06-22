@@ -15,9 +15,12 @@
 package cmd
 
 import (
+	"encoding/base64"
 	"io/ioutil"
 	"log"
 	"os"
+
+	"fmt"
 
 	"github.com/elliottsam/vault-config/crypto"
 	"github.com/spf13/cobra"
@@ -31,31 +34,56 @@ var encryptCmd = &cobra.Command{
 delete flag is set to true, this will also delete
 the original file
 
-i.e.
-vault-config encrypt -k n4y9jxgGkYbvkhQmWVYOkjx42nFPvcwx
+The key specified needs to be 32 bytes long and
+base 64 encoded, this can be generated with the
+keygen command
 
-Will encrypt the file 'config.hcl' to 'config.hcl.enc'`,
+If the key is not specified it will be requested
+from the command line
+
+i.e.
+vault-config encrypt -i config.vc -k mSskqBC85rA65lofPOaQcVtjjnHJ16rI+/rqZfkBwqs=
+
+Will encrypt the file 'config.vc' to 'config.vc.enc'`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(key) != 32 {
+		if input == "" {
+			log.Fatalf("No input file specified, use paramter -input")
+		}
+		var err error
+		e := crypto.EncryptionObject{}
+		if key == "" {
+			e.Key, err = crypto.GetPassword()
+			if err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			e.Key, err = base64.StdEncoding.DecodeString(key)
+			if err != nil {
+				log.Fatalf("Error decoding base64 key: %v", err)
+			}
+		}
+		if len(e.Key) != 32 {
 			log.Fatalln("Key must be 32 bytes")
 		}
 		file, err := ioutil.ReadFile(input)
 		if err != nil {
 			log.Fatal(err)
 		}
-		e := crypto.EncryptionObject{
-			Key:       key,
-			PlainText: file,
-		}
+
+		e.PlainText = file
+
 		if err := e.Encrypt(); err != nil {
 			log.Fatalf("Error encrypting file: %v", err)
 		}
 		e.WrapCrypto()
-		if err := ioutil.WriteFile(output, []byte(e.WrappedData), 0644); err != nil {
-			log.Fatalf("Error writing encrypted file to disk: %v", err)
-		}
 		if deleteFile {
 			os.Remove(input)
+		}
+		if output == "" {
+			output = fmt.Sprintf("%s.enc", input)
+		}
+		if err := ioutil.WriteFile(output, []byte(e.WrappedData), 0644); err != nil {
+			log.Fatalf("Error writing encrypted file to disk: %v", err)
 		}
 	},
 }
@@ -63,8 +91,8 @@ Will encrypt the file 'config.hcl' to 'config.hcl.enc'`,
 func init() {
 	RootCmd.AddCommand(encryptCmd)
 
-	encryptCmd.Flags().StringVarP(&input, "input", "i", "config.hcl", "Name of file to encrypt")
-	encryptCmd.Flags().StringVarP(&output, "output", "o", "config.hcl.enc", "Name of encrypted file to output")
+	encryptCmd.Flags().StringVarP(&input, "input", "i", "", "Name of file to encrypt - required")
+	encryptCmd.Flags().StringVarP(&output, "output", "o", "", "Name of encrypted file to output")
 	encryptCmd.Flags().StringVarP(&key, "key", "k", "", "Key to use for encryption")
 	encryptCmd.Flags().BoolVarP(&deleteFile, "delete", "d", false, "Delete original file after encryption, if successful")
 }

@@ -9,9 +9,16 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	mrand "math/rand"
+	"os"
 	"regexp"
+	"strings"
+	"syscall"
 	"time"
+
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 var (
@@ -22,7 +29,7 @@ var (
 // EncryptionObject contains all the variables and methods
 // associated with encrypting and decrypting data
 type EncryptionObject struct {
-	Key         string
+	Key         []byte
 	CipherText  []byte
 	PlainText   []byte
 	HMAC        []byte
@@ -31,9 +38,7 @@ type EncryptionObject struct {
 
 // Encrypt will crypto data with specified key
 func (e *EncryptionObject) Encrypt() error {
-	keyb := []byte(e.Key)
-
-	block, err := aes.NewCipher(keyb)
+	block, err := aes.NewCipher(e.Key)
 	if err != nil {
 		return fmt.Errorf("Error creating AES block: %v", err)
 	}
@@ -57,14 +62,12 @@ func (e *EncryptionObject) Encrypt() error {
 
 // Decrypt will decrypt data with specified key
 func (e *EncryptionObject) Decrypt() error {
-	bkey := []byte(e.Key)
-
 	h, _ := CreateHMAC(e.Key, e.CipherText)
 	if !hmac.Equal(e.HMAC, h) {
 		return fmt.Errorf("HMAC failure, ciphertext has changed, this could indicate incorrect key")
 	}
 
-	block, err := aes.NewCipher(bkey)
+	block, err := aes.NewCipher(e.Key)
 	if err != nil {
 		return fmt.Errorf("Error creating AES block: %v", err)
 	}
@@ -80,9 +83,7 @@ func (e *EncryptionObject) Decrypt() error {
 }
 
 // CreateHMAC will generate a cryptographic hash of data supplied
-func CreateHMAC(key string, data []byte) ([]byte, error) {
-	keyb := []byte(key)
-
+func CreateHMAC(keyb []byte, data []byte) ([]byte, error) {
 	h := hmac.New(sha512.New, keyb)
 	_, err := h.Write(data)
 	if err != nil {
@@ -139,4 +140,99 @@ func RandomKey(n int) string {
 	}
 
 	return string(b)
+}
+
+func RandomKeyB64(n int) string {
+	b := make([]byte, n)
+	rand.Reader.Read(b)
+
+	return base64.StdEncoding.EncodeToString(b)
+}
+
+func (e *EncryptionObject) ReadConfigFiles(filename string) []byte {
+	var (
+		file []byte
+		err  error
+	)
+	if filename != "" {
+		file, err = ioutil.ReadFile(filename)
+		if err != nil {
+			log.Fatal("Error reading file: ", err)
+		}
+	} else {
+		pwd, err := os.Getwd()
+		if err != nil {
+			log.Fatalf("Error getting working directory: %v", err)
+		}
+		files, err := ioutil.ReadDir(pwd)
+		if err != nil {
+			log.Fatalf("Error reading directory: %v", err)
+		}
+		for _, f := range files {
+			if !f.IsDir() && strings.HasSuffix(f.Name(), ".vc") {
+				fbytes, err := ioutil.ReadFile(f.Name())
+				if err != nil {
+					log.Fatalf("Error reading file: %v", err)
+				}
+				file = JoinBytes(fbytes, file)
+			}
+		}
+	}
+	return file
+}
+
+func (e *EncryptionObject) ReadEncryptedConfigFiles(filename string) []byte {
+	var (
+		file []byte
+		err  error
+	)
+	pwd, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("Error getting working directory: %v", err)
+	}
+	files, err := ioutil.ReadDir(pwd)
+	if err != nil {
+		log.Fatalf("Error reading directory: %v", err)
+	}
+	for _, f := range files {
+		if !f.IsDir() && strings.HasSuffix(f.Name(), ".vc.enc") {
+			fbytes, err := ioutil.ReadFile(f.Name())
+			if err != nil {
+				log.Fatalf("Error reading file: %v", err)
+			}
+
+			e.WrappedData = string(fbytes)
+			if err := e.UnwrapCrypto(); err != nil {
+				log.Fatalf("Error unwrapping encrypted file: %v\nErr: %v", f.Name(), err)
+			}
+			if err := e.Decrypt(); err != nil {
+				log.Fatalf("Error decrypting file: %v\n Err: %v", f.Name(), err)
+			}
+			file = JoinBytes([]byte(e.PlainText), file)
+		}
+	}
+	return file
+}
+
+func JoinBytes(dst, src []byte) []byte {
+	for _, b := range src {
+		dst = append(dst, b)
+	}
+	dst = append(dst, byte(10))
+
+	return dst
+}
+
+func GetPassword() ([]byte, error) {
+	fmt.Print("Please enter key: ")
+	bytesB64Key, err := terminal.ReadPassword(syscall.Stdin)
+	if err != nil {
+		return nil, fmt.Errorf("Error reading encryption key from terminal: %v", err)
+	}
+	bytesKey, err := base64.StdEncoding.DecodeString(string(bytesB64Key))
+	if err != nil {
+		return nil, fmt.Errorf("Error decoding base64 key: %v", err)
+	}
+
+	return bytesKey, nil
 }

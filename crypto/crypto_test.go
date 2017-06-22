@@ -7,14 +7,14 @@ import (
 )
 
 const (
-	key         = `n4y9jxgGkYbvkhQmWVYOkjx42nFPvcwx`
 	str         = `This is a test string`
 	cipherRegex = `@encrypted_data\((.*)\)`
 	hmacRegex   = `@hmac\((.*)\)`
 )
 
 var (
-	e = EncryptionObject{
+	key = []byte{153, 43, 36, 168, 16, 188, 230, 176, 58, 230, 90, 31, 60, 230, 144, 113, 91, 99, 142, 113, 201, 215, 170, 200, 251, 250, 234, 101, 249, 1, 194, 171}
+	e   = EncryptionObject{
 		Key:       key,
 		PlainText: []byte(str),
 	}

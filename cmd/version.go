@@ -17,22 +17,20 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/elliottsam/vault-config/crypto"
+	"github.com/elliottsam/vault-config/version"
 	"github.com/spf13/cobra"
 )
 
-// keygenCmd represents the keygen command
-var keygenCmd = &cobra.Command{
-	Use:   "keygen",
-	Short: "Creates key suitable for encryption",
-	Long: `Generates a random 32 byte base64 encoded
-key suitable for use with the encryption
-implementation used in this tool`,
+// versionCmd represents the version command
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Vault config version",
+	Long:  `Print version of the vault-config executable`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Key: %s\n", crypto.RandomKeyB64(32))
+		fmt.Printf("vault-config v%s\n", version.Version)
 	},
 }
 
 func init() {
-	RootCmd.AddCommand(keygenCmd)
+	RootCmd.AddCommand(versionCmd)
 }

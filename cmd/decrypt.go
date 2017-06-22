@@ -15,9 +15,14 @@
 package cmd
 
 import (
+	"encoding/base64"
 	"io/ioutil"
 	"log"
 	"os"
+
+	"strings"
+
+	"fmt"
 
 	"github.com/elliottsam/vault-config/crypto"
 	"github.com/spf13/cobra"
@@ -27,30 +32,66 @@ import (
 var decryptCmd = &cobra.Command{
 	Use:   "decrypt",
 	Short: "Decrypts the specified file",
-	Long:  ``,
+	Long: `Decrypts a file using the specified key, if the
+delete flag is set to true, this will also delete
+the original file
+
+The key specified needs to be 32 bytes long and
+base 64 encoded
+
+If the key is not specified it will be requested
+from the command line
+
+i.e.
+vault-config decrypt -i config.vc.enc -k mSskqBC85rA65lofPOaQcVtjjnHJ16rI+/rqZfkBwqs=
+
+Will encrypt the file 'config.vc.enc' to 'config.vc'`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(key) != 32 {
+		if input == "" {
+			log.Fatalf("No input file specified, use paramter -input")
+		}
+		var err error
+		e := crypto.EncryptionObject{}
+		if key == "" {
+			e.Key, err = crypto.GetPassword()
+			if err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			e.Key, err = base64.StdEncoding.DecodeString(key)
+			if err != nil {
+				log.Fatalf("Error decoding base64 key: %v", err)
+			}
+		}
+		if len(e.Key) != 32 {
 			log.Fatalln("Key must be 32 bytes")
 		}
 		file, err := ioutil.ReadFile(input)
 		if err != nil {
 			log.Fatal(err)
 		}
-		e := crypto.EncryptionObject{
-			Key:         key,
-			WrappedData: string(file),
-		}
+
+		e.WrappedData = string(file)
+
 		if err := e.UnwrapCrypto(); err != nil {
 			log.Fatalf("Error unwrapping encrypted file: %v", err)
 		}
 		if err := e.Decrypt(); err != nil {
 			log.Fatalf("Error decrypting file: %v", err)
 		}
-		if err := ioutil.WriteFile(output, e.PlainText, 0644); err != nil {
-			log.Fatalf("Error writing file to disk: %v", err)
-		}
+
 		if deleteFile {
 			os.Remove(input)
+		}
+		if output == "" {
+			if strings.HasSuffix(input, ".enc") {
+				output = strings.TrimSuffix(input, ".enc")
+			} else {
+				output = fmt.Sprintf("%s.dec", input)
+			}
+		}
+		if err := ioutil.WriteFile(output, e.PlainText, 0644); err != nil {
+			log.Fatalf("Error writing file to disk: %v", err)
 		}
 	},
 }
@@ -58,8 +99,8 @@ var decryptCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(decryptCmd)
 
-	decryptCmd.Flags().StringVarP(&input, "input", "i", "config.hcl.enc", "Name of encrypted file to decrypt")
-	decryptCmd.Flags().StringVarP(&output, "output", "o", "config.hcl", "Name of file to output")
+	decryptCmd.Flags().StringVarP(&input, "input", "i", "", "Name of encrypted file to decrypt")
+	decryptCmd.Flags().StringVarP(&output, "output", "o", "", "Name of file to output")
 	decryptCmd.Flags().StringVarP(&key, "key", "k", "", "Key to use for decryption")
 	decryptCmd.Flags().BoolVarP(&deleteFile, "delete", "d", false, "Delete original file after decryption, if successful")
 }

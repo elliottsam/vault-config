@@ -15,10 +15,10 @@
 package cmd
 
 import (
-	"io/ioutil"
+	"fmt"
 	"log"
 
-	"fmt"
+	"encoding/base64"
 
 	"github.com/elliottsam/vault-config/crypto"
 	"github.com/elliottsam/vault-config/vault"
@@ -31,33 +31,43 @@ import (
 var configCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Executes configuration of Vault",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Long: `vault-config configure will read through all
+configuration files with the .vc extension and
+apply changes to Vault
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Vault configuration is retrieved through the
+same environment variables the main Vault
+client uses
+
+If the -encrypted flag is set, the tool will
+also cycle through all .vc.enc files and decrypt
+these a key will be requested if not passed
+via the -key flag
+
+e.g.
+vault-config config -e -k mSskqBC85rA65lofPOaQcVtjjnHJ16rI+/rqZfkBwqs=
+
+This will cycle through all .vc and .vc.enc files
+decrypting those that require it
+`,
 	Run: func(cmd *cobra.Command, args []string) {
-		file, err := ioutil.ReadFile(filename)
-		if err != nil {
-			log.Fatal("Error reading file: ", err)
-		}
+		var err error
 
 		e := crypto.EncryptionObject{}
+		e.PlainText = e.ReadConfigFiles(filename)
 		if encrypted {
 			if key == "" {
-				log.Fatal("Error no encryption key entered")
+				e.Key, err = crypto.GetPassword()
+				if err != nil {
+					log.Fatal(err)
+				}
+			} else {
+				e.Key, err = base64.StdEncoding.DecodeString(key)
+				if err != nil {
+					log.Fatalf("Error base64 decoding key: %v", err)
+				}
 			}
-			e.Key = key
-			e.WrappedData = string(file)
-			if err := e.UnwrapCrypto(); err != nil {
-				log.Fatal(err)
-			}
-			if err := e.Decrypt(); err != nil {
-				log.Fatal(err)
-			}
-		} else {
-			e.PlainText = file
+			e.PlainText = crypto.JoinBytes(e.ReadEncryptedConfigFiles(filename), e.PlainText)
 		}
 
 		config := api.DefaultConfig()
@@ -115,7 +125,7 @@ to quickly create a Cobra application.`,
 func init() {
 	RootCmd.AddCommand(configCmd)
 
-	configCmd.Flags().StringVarP(&filename, "filename", "f", "config.hcl", "Filename of configuration file")
+	configCmd.Flags().StringVarP(&filename, "filename", "f", "", "Filename of configuration file")
 	configCmd.Flags().BoolVarP(&encrypted, "encrypted", "e", false, "Is this file encrypted")
 	configCmd.Flags().StringVarP(&key, "key", "k", "", "Encryption key this must be 32 bytes")
 }
