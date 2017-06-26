@@ -115,8 +115,14 @@ decrypting those that require it
 		}
 
 		for _, v := range vconf.TokenRoles {
-			if err := client.WriteTokenRole(v.Name, vault.ConvertMapStringInterface(v.Options)); err != nil {
+			if err := client.WriteTokenRole(v); err != nil {
 				log.Fatal("Error writing token role: %v", err)
+			}
+		}
+
+		for _, v := range vconf.Secrets {
+			if err := client.WriteSecret(v); err != nil {
+				log.Fatalf("Error: %v", err)
 			}
 		}
 	},

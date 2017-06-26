@@ -177,4 +177,12 @@ auth {
       organization = "testorg"
     }
   }
+}
+
+secret "test" {
+	path = "/example/app1/test"
+	data {
+		value = "test1"
+		password = "test2"
+	}
 }`

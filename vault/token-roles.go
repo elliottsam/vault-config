@@ -1,29 +1,20 @@
 package vault
 
-import (
-	"fmt"
+import "fmt"
 
-	"github.com/davecgh/go-spew/spew"
-	"github.com/mgutz/logxi/v1"
-)
-
-func (c *VCClient) TokenRoleExists(name string) bool {
-	r, err := c.Logical().List("auth/token/roles")
-	if err != nil {
-		log.Fatal("Error reading roles:", err)
-	}
-	//TODO Remove the spew below
-	spew.Dump(r.Data)
-	if _, ok := r.Data[name]; ok {
-		return true
+func (c *VCClient) tokenRoleExists(tr TokenRole) bool {
+	path := fmt.Sprintf("auth/token/roles/%s", tr.Name)
+	r, err := c.Logical().Read(path)
+	if err != nil || r == nil {
+		return false
 	}
 
-	return false
+	return true
 }
 
-func (c *VCClient) WriteTokenRole(name string, data map[string]interface{}) error {
-	p := fmt.Sprintf("auth/token/roles/%s", name)
-	_, err := c.Client.Logical().Write(p, data)
+func (c *VCClient) WriteTokenRole(tr TokenRole) error {
+	path := fmt.Sprintf("auth/token/roles/%s", tr.Name)
+	_, err := c.Client.Logical().Write(path, tr.Options)
 	if err != nil {
 		return fmt.Errorf("Error writing role: %v", err)
 	}

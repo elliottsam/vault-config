@@ -14,6 +14,7 @@ type Config struct {
 	Policies   []Policy    `hcl:"policy"`
 	TokenRoles []TokenRole `hcl:"token_role"`
 	Auth       Auth        `hcl:"auth"`
+	Secrets    []Secret    `hcl:"secret"`
 }
 
 type Mount struct {
@@ -40,16 +41,8 @@ type Auth struct {
 }
 
 type TokenRole struct {
-	Name    string `hcl:",key"`
-	Options struct {
-		AllowedPolicies    string      `hcl:"allowed_policies" mapstructure:"allowed_policies"`
-		DisallowedPolicies string      `hcl:"disallowed_policies" mapstructure:"disallowed_policies"`
-		ExplicitMaxTTL     interface{} `hcl:"explicit_max_ttl" mapstructure:"explicit_max_ttl"`
-		Orphan             bool        `hcl:"orphan" mapstructure:"orphan"`
-		PathSuffix         string      `hcl:"path_suffix" mapstructure:"path_suffix"`
-		Period             interface{} `hcl:"period" mapstructure:"period"`
-		Renewable          bool        `hcl:"renewable" mapstructure:"renewable"`
-	} `hcl:"options"`
+	Name    string                 `hcl:",key"`
+	Options map[string]interface{} `hcl:"options"`
 }
 
 // NewClient returns a Vault client

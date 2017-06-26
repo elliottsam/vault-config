@@ -7,7 +7,7 @@ import (
 )
 
 func TestExecute(t *testing.T) {
-	_, err := RootCmd.ExecuteC()
+	err := RootCmd.Execute()
 
 	assert.NoError(t, err, "Running configCmd should return no error")
 }

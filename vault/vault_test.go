@@ -9,19 +9,19 @@ import (
 )
 
 func (vsc *vaultServerConfigTestSuite) testAuthBackendEnable(a AuthType) {
-	assert.False(vsc.T(), vsc.vtc.AuthExist(a.GetType()))
+	assert.False(vsc.T(), vsc.vtc.AuthExist(a.GetType()), "Auth should not exist before enable: %s", a.GetType())
 	err := vsc.vtc.AuthEnable(a)
-	assert.NoError(vsc.T(), err, "AuthEnable should not return an error: ", err)
-	assert.True(vsc.T(), vsc.vtc.AuthExist(a.GetType()), "AuthExist should return true after enabling auth type: ", a.GetType())
+	assert.NoError(vsc.T(), err, "AuthEnable should not return an error: %v", err)
+	assert.True(vsc.T(), vsc.vtc.AuthExist(a.GetType()), "AuthExist should return true after enabling auth type: %s", a.GetType())
 }
 
 func (vsc *vaultServerConfigTestSuite) testAuthBackendConfiguration(a AuthType) {
 	vsc.vtc.AuthConfigure(a)
 	s, err := vsc.vtc.Logical().Read("auth/" + a.GetType() + "/config")
-	assert.NoError(vsc.T(), err, "Should not error reading Auth config path: ", err)
+	assert.NoError(vsc.T(), err, "Should not error reading Auth config path: %v", err)
 	ac := a.getAuthConfig()
 	for k, _ := range ac {
-		assert.Equal(vsc.T(), ac[k], s.Data[k], fmt.Sprintf("Local config should match Vault server for key: %v"), k)
+		assert.Equal(vsc.T(), ac[k], s.Data[k], "Local config should match Vault server for key: %v", k)
 	}
 }
 
@@ -52,13 +52,13 @@ func (vsc *vaultServerConfigTestSuite) TestVCClient_Auth() {
 	//vsc.testAuthBackendMountConfiguration(vc.Auth.Github)
 }
 
-func (vsc *vaultServerConfigTestSuite) TestVCClient_Mounts() {
+func (vsc *vaultServerConfigTestSuite) TestVCClient_MountsAndSecrets() {
 	// Test creating new mounts from config
 	for _, v := range vc.Mounts {
-		assert.False(vsc.T(), vsc.vtc.MountExist(v.Path), "Mount should not exist at beginning of test: ", v.Path)
+		assert.False(vsc.T(), vsc.vtc.MountExist(v.Path), "Mount should not exist at beginning of test: %s", v.Path)
 		err := vsc.vtc.Mount(v.Path, ConvertMapStringInterface(v.Config))
-		assert.NoError(vsc.T(), err, "Creating mount should not cause an error: ", err)
-		assert.True(vsc.T(), vsc.vtc.MountExist(v.Path), "Mount should exist after creation: ", v.Path)
+		assert.NoError(vsc.T(), err, "Creating mount should not cause an error: %v", err)
+		assert.True(vsc.T(), vsc.vtc.MountExist(v.Path), "Mount should exist after creation: %s", v.Path)
 	}
 
 	// Test that custom mount configuration has been completed successfully
@@ -76,16 +76,39 @@ func (vsc *vaultServerConfigTestSuite) TestVCClient_Mounts() {
 	} else {
 		vsc.T().Errorf("No mount found: %v")
 	}
+
+	for _, v := range vc.Secrets {
+		assert.False(vsc.T(), vsc.vtc.secretExist(v), "Secret should not exist before write: %s", v.Name)
+		err := vsc.vtc.WriteSecret(v)
+		assert.NoError(vsc.T(), err, "Writing secret should not return an error: %s", v.Name)
+		assert.True(vsc.T(), vsc.vtc.secretExist(v), "Secret should exist after write: %s", v.Name)
+		secret, err := vsc.vtc.Logical().Read(v.Path)
+		assert.NoError(vsc.T(), err, "Reading secret path should not return an error: %s", v.Name)
+		assert.Equal(vsc.T(), v.Data, secret.Data, "Secret should match input: %s", v.Name)
+	}
 }
 
-func (vcs *vaultServerConfigTestSuite) TestVCClient_Policy() {
+func (vsc *vaultServerConfigTestSuite) TestVCClient_Policy() {
 	for _, v := range vc.Policies {
-		assert.False(vcs.T(), vcs.vtc.PolicyExist(v.Name), "Policy should not exist before add:", v.Name)
-		err := vcs.vtc.PolicyAdd(v)
-		assert.NoError(vcs.T(), err, "Adding new policy with valid data should return no error:", v.Name)
-		assert.True(vcs.T(), vcs.vtc.PolicyExist(v.Name), "Policy should exist after add:", v.Name)
-		pol, err := vcs.vtc.Sys().GetPolicy(v.Name)
-		assert.NoError(vcs.T(), err, "Getting policy should return no error:", err)
-		assert.Equal(vcs.T(), v.Rules, pol, "Policy should match input configuration")
+		assert.False(vsc.T(), vsc.vtc.PolicyExist(v.Name), "Policy should not exist before add: %s", v.Name)
+		err := vsc.vtc.PolicyAdd(v)
+		assert.NoError(vsc.T(), err, "Adding new policy with valid data should return no error: %s", v.Name)
+		assert.True(vsc.T(), vsc.vtc.PolicyExist(v.Name), "Policy should exist after add: %s", v.Name)
+		pol, err := vsc.vtc.Sys().GetPolicy(v.Name)
+		assert.NoError(vsc.T(), err, "Getting policy should return no error: %v", err)
+		assert.Equal(vsc.T(), v.Rules, pol, "Policy should match input configuration")
+	}
+}
+
+func (vsc *vaultServerConfigTestSuite) TestVCClient_TokenRole() {
+	for _, v := range vc.TokenRoles {
+		assert.False(vsc.T(), vsc.vtc.tokenRoleExists(v), "Token role should not exist before add: %s", v.Name)
+		err := vsc.vtc.WriteTokenRole(v)
+		assert.NoError(vsc.T(), err, "Adding new token role should return no error:", v.Name)
+		assert.True(vsc.T(), vsc.vtc.tokenRoleExists(v), "Token role should exist after add: %s", v.Name)
+		path := fmt.Sprintf("auth/token/roles/%s", v.Name)
+		_, err = vsc.vtc.Logical().Read(path)
+		assert.NoError(vsc.T(), err, "Reading token role should return no error: %v", err)
+		//assert.Equal(vsc.T(), v.Options, tr.Data, "Policy should match input configuration")
 	}
 }
