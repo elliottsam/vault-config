@@ -5,12 +5,29 @@ As a long time user of Vault, there is one thing that I have always found a bit 
 - Use HCL to make configuration more readable
 - Ability to Encrypt/Decrypt configuration files
 
-###Resources
-####Policy
+Vault configuration for this tool will be with the same environment variable as the main Vault tool
+
+### Resources
+#### Secret
+This resource will add secrets to the vault server
+##### Argument reference
+- `path` - Path to the secret
+- `data` - Map of the data to be stored in the secret
+##### Example
+```hcl
+secret "test" {
+  path = "/example/app1/test"
+  data {
+    value = "test_data"
+  }
+}
+```
+
+#### Policy
 This resource will configure vault policies
-#####Argument reference
+##### Argument reference
 - `rules` - The policy definition
-#####Example Usage
+##### Example Usage
 ```hcl
 policy "example-policy-1" {
   rules =<<EOF
@@ -22,8 +39,8 @@ EOF
 }
 ```
 
-####Mount
-#####Argument Reference
+#### Mount
+##### Argument Reference
 - `path` - Vault path for mount
 - `config` - Configuration options for the mount
     - `type` - Type of mount
@@ -31,7 +48,7 @@ EOF
 - `mountconfig` - Mount configuration options
     - `default_lease_ttl` - Default lease TTL for mount
     - `max_lease_ttl` - Max lease TTL for mount
-#####Example
+##### Example
 ```hcl
 mount "app1" {
   path = "example/app1"
@@ -46,8 +63,8 @@ mount "app1" {
 }
 ```
 
-####Token Role
-#####Argument Reference
+#### Token Role
+##### Argument Reference
 Name is picked up from the HCL object key
 - `options` - A map of configuration options for the token role
 #####Example
@@ -60,9 +77,9 @@ token_role "example_period_token_role" {
   }
 }
 ```
-####Auth
+#### Auth
 Currently Auth has support for LDAP and Github
-#####Argument Reference
+##### Argument Reference
 - `ldap` - Configures Ldap auth backend
     - `description` - Description for the backend
     - `authconfig` - Map of options for hte auth backend
@@ -83,7 +100,7 @@ Currently Auth has support for LDAP and Github
     - `mountconfig` - Lease settings for Github backend
         - `default_lease_ttl` - Default lease TTL as time duration
         - `max_lease_ttl` - Max lease TTL as time duration
-#####Example
+##### Example
 ```hcl
 auth {
   ldap {
