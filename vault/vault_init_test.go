@@ -24,6 +24,7 @@ type vaultServerConfigTestSuite struct {
 }
 
 var vc Config
+var pUpdate Config
 
 func (v *vaultServerConfigTestSuite) SetupSuite() {
 	// TODO Make tests work on Windows as well as Linux
@@ -42,7 +43,10 @@ func (v *vaultServerConfigTestSuite) SetupSuite() {
 	v.initVaultTestClient()
 	time.Sleep(td)
 	if err := hcl.Decode(&vc, hcl_config); err != nil {
-		v.T().Fatal("Error decoding HCL: %v", err)
+		v.T().Fatalf("Error decoding HCL: %v", err)
+	}
+	if err := hcl.Decode(&pUpdate, policyUpdate); err != nil {
+		v.T().Fatalf("Error decoding HCL: %v", err)
 	}
 }
 
@@ -185,4 +189,23 @@ secret "test" {
 		value = "test1"
 		password = "test2"
 	}
+}`
+
+const policyUpdate = `
+policy "example-policy-1" {
+  rules =<<EOF
+# Allow to make changes to /example/app1 mount
+path "example/app1" {
+    capabilities = ["read", "list"]
+}
+EOF
+}
+
+policy "example-policy-2" {
+  rules =<<EOF
+# Allow to make changes to /example/app2 mount
+path "example/app2" {
+    capabilities = ["read", "list"]
+}
+EOF
 }`

@@ -72,3 +72,11 @@ auth {
     }
   }
 }
+
+secret "test" {
+	path = "secret/test"
+	data {
+		value  = "test string"
+		value2 = 1000
+	}
+}

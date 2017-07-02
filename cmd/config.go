@@ -95,10 +95,8 @@ decrypting those that require it
 		}
 
 		for _, p := range vconf.Policies {
-			if !client.PolicyExist(p.Name) {
-				if err := client.PolicyAdd(p); err != nil {
-					log.Fatal(err)
-				}
+			if err := client.PolicyAdd(p); err != nil {
+				log.Fatal(err)
 			}
 		}
 

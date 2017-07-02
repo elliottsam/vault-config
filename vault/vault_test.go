@@ -98,6 +98,18 @@ func (vsc *vaultServerConfigTestSuite) TestVCClient_Policy() {
 		assert.NoError(vsc.T(), err, "Getting policy should return no error: %v", err)
 		assert.Equal(vsc.T(), v.Rules, pol, "Policy should match input configuration")
 	}
+
+	// Check that policies update with new details
+	for _, v := range pUpdate.Policies {
+		pol, err := vsc.vtc.Sys().GetPolicy(v.Name)
+		assert.NoError(vsc.T(), err, "Getting policy should return no error: %v", err)
+		assert.NotEqual(vsc.T(), v.Rules, pol, "Policy should not match input configuration")
+		err = vsc.vtc.PolicyAdd(v)
+		assert.NoError(vsc.T(), err, "Updating policy with valid data should return no error: %s", v.Name)
+		pol, err = vsc.vtc.Sys().GetPolicy(v.Name)
+		assert.NoError(vsc.T(), err, "Getting policy should return no error: %v", err)
+		assert.Equal(vsc.T(), v.Rules, pol, "Policy should match input configuration")
+	}
 }
 
 func (vsc *vaultServerConfigTestSuite) TestVCClient_TokenRole() {
