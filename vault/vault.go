@@ -1,6 +1,10 @@
 package vault
 
-import "github.com/hashicorp/vault/api"
+import (
+	"os"
+
+	"github.com/hashicorp/vault/api"
+)
 
 // VCClient is a wrapper around the Vault api.Client
 type VCClient struct {
@@ -46,7 +50,13 @@ type TokenRole struct {
 }
 
 // NewClient returns a Vault client
-func NewClient(c *api.Config) (*VCClient, error) {
+func NewClient() (*VCClient, error) {
+	c := api.DefaultConfig()
+	if os.Getenv("VAULT_SKIP_VERIFY") == "true" {
+		if err := c.ConfigureTLS(&api.TLSConfig{Insecure: true}); err != nil {
+			return nil, err
+		}
+	}
 	client, err := api.NewClient(c)
 	if err != nil {
 		return nil, err

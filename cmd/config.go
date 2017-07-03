@@ -23,7 +23,6 @@ import (
 	"github.com/elliottsam/vault-config/crypto"
 	"github.com/elliottsam/vault-config/vault"
 	"github.com/hashicorp/hcl"
-	"github.com/hashicorp/vault/api"
 	"github.com/spf13/cobra"
 )
 
@@ -70,8 +69,7 @@ decrypting those that require it
 			e.PlainText = crypto.JoinBytes(e.ReadEncryptedConfigFiles(filename), e.PlainText)
 		}
 
-		config := api.DefaultConfig()
-		client, err := vault.NewClient(config)
+		client, err := vault.NewClient()
 		if err != nil {
 			log.Fatalf("Error creating Vault client: %v", err)
 
