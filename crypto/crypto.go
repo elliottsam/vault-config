@@ -214,6 +214,45 @@ func (e *EncryptionObject) ReadEncryptedConfigFiles(filename string) []byte {
 	return file
 }
 
+func EncryptString(data string, key []byte) (string, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", fmt.Errorf("Error creating AES block: %v", err)
+	}
+
+	pt := []byte(data)
+	ct := make([]byte, aes.BlockSize+len(data))
+	iv := ct[:aes.BlockSize]
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		return "", fmt.Errorf("Error creating iv: %v", err)
+	}
+
+	stream := cipher.NewCFBEncrypter(block, iv)
+	stream.XORKeyStream(ct[aes.BlockSize:], pt)
+
+	return base64.StdEncoding.EncodeToString(ct), nil
+}
+
+func DecryptString(cipherText string, key []byte) (string, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return "", fmt.Errorf("Error creating AES block: %v", err)
+	}
+
+	ct, err := base64.StdEncoding.DecodeString(cipherText)
+	if err != nil {
+		return "", fmt.Errorf("Error base64 decoding cipher text: %v", err)
+	}
+	iv := ct[:aes.BlockSize]
+	ct = ct[aes.BlockSize:]
+
+	pt := make([]byte, len(ct))
+	stream := cipher.NewCFBDecrypter(block, iv)
+	stream.XORKeyStream(pt, ct)
+
+	return string(pt), nil
+}
+
 func JoinBytes(dst, src []byte) []byte {
 	for _, b := range src {
 		dst = append(dst, b)

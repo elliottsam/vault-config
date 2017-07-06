@@ -50,11 +50,13 @@ type TokenRole struct {
 }
 
 // NewClient returns a Vault client
-func NewClient() (*VCClient, error) {
-	c := api.DefaultConfig()
-	if os.Getenv("VAULT_SKIP_VERIFY") == "true" {
-		if err := c.ConfigureTLS(&api.TLSConfig{Insecure: true}); err != nil {
-			return nil, err
+func NewClient(c *api.Config) (*VCClient, error) {
+	if c == nil {
+		c = api.DefaultConfig()
+		if os.Getenv("VAULT_SKIP_VERIFY") == "true" {
+			if err := c.ConfigureTLS(&api.TLSConfig{Insecure: true}); err != nil {
+				return nil, err
+			}
 		}
 	}
 	client, err := api.NewClient(c)

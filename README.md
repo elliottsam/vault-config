@@ -23,9 +23,9 @@ secret "test" {
 }
 ```
 
-#### Policy
+### Policy
 This resource will configure vault policies
-##### Argument reference
+#### Argument reference
 - `rules` - The policy definition
 ##### Example Usage
 ```hcl
@@ -39,8 +39,8 @@ EOF
 }
 ```
 
-#### Mount
-##### Argument Reference
+### Mount
+#### Argument Reference
 - `path` - Vault path for mount
 - `config` - Configuration options for the mount
     - `type` - Type of mount
@@ -63,11 +63,11 @@ mount "app1" {
 }
 ```
 
-#### Token Role
-##### Argument Reference
+### Token Role
+#### Argument Reference
 Name is picked up from the HCL object key
 - `options` - A map of configuration options for the token role
-#####Example
+##### Example
 ```hcl
 token_role "example_period_token_role" {
   options {
@@ -77,9 +77,9 @@ token_role "example_period_token_role" {
   }
 }
 ```
-#### Auth
+### Auth
 Currently Auth has support for LDAP and Github
-##### Argument Reference
+#### Argument Reference
 - `ldap` - Configures Ldap auth backend
     - `description` - Description for the backend
     - `authconfig` - Map of options for hte auth backend
@@ -134,104 +134,58 @@ auth {
 }
 ```
 
+### Template engine
+This tool supports templating in config files, this will allow substitution and also copying secrets from another Vault server. All interpolation will only be held in memory and will not be written to disk
 
-
-Below is a example configuration, that configures some mounts, policies and an LDAP auth backend, this is currently all I have tested this with as this is all I need to configure for my environment.
-  
+All variables to be used within templates should be placed in the `vault-config.vc` file and should use the following format
 ```hcl
-mount "app1" {
-  path = "example/app1"
-  config = {
+foo = "bar"
+testkey = "testvar"
+```
+
+#### Template functions
+There are two template function available
+##### Lookup
+This will use the variables loaded and interpolate them into a script
+e.g.
+```hcl
+mount "app2" {
+  path = "{{ Lookup "foo" }}/app1"
+  config {
     type = "generic"
     description = "Example App 1"
-  }
-  mountconfig {
-    default_lease_ttl = "20h"
-    max_lease_ttl = "768h"
-  }
-}
-
-mount "pki" {
-  path = "pki"
-  config = {
-    type = "pki"
-    description = "My cool PKI backend"
-  }
-  mountconfig {
-    default_lease_ttl = "768h"
-    max_lease_ttl = "768h"
-  }
-}
-
-mount "app2" {
-  path = "example/app2"
-  config = {
-    type = "generic"
-    description = "Example App 2"
-  }
-  mountconfig {
-    default_lease_ttl = "1h"
-    max_lease_ttl = "24h"
-  }
-}
-
-
-policy "example-policy-1" {
-  rules =<<EOF
-# Allow to make changes to /example/app1 mount
-path "example/app1" {
-    capabilities = ["create", "read", "update", "delete", "list"]
-}
-EOF
-}
-
-policy "example-policy-2" {
-  rules =<<EOF
-# Allow to make changes to /example/app2 mount
-path "example/app2" {
-    capabilities = ["create", "read", "update", "delete", "list"]
-}
-EOF
-}
-
-token_role "example_period_token_role" {
-  options {
-    allowed_policies = "example-policy-1,example-policy-2"
-    period = 20
-    renewable = true
-  }
-}
-
-auth {
-  ldap {
-    description = "LDAP Auth backend config"
-    authconfig {
-      binddn = "CN=SamE,CN=Users,DC=test,DC=local"
-      bindpass = "z"
-      url = "ldap://10.255.0.30"
-      userdn = "CN=Users,DC=test,DC=local"
-    }
-    group "groupa" {
-      options {
-        policies = "example-policy-1"
-      }
-    }
-    user "same" {
-      options {
-        policies = "example-policy-1,example-policy-2"
-      }
-    }
     mountconfig {
       default_lease_ttl = "1h"
       max_lease_ttl = "24h"
     }
   }
-  github {
-    authconfig = {
-      organization = "testorg"
+}
+```
+With the vars file above will result in the following
+```hcl
+mount "app2" {
+  path = "bar/secret"
+  config {
+    type = "generic"
+    description = "Example App 2"
+    mountconfig {
+      default_lease_ttl = "1h"
+      max_lease_ttl = "24h"
     }
   }
 }
 ```
+##### LookupSecret
+This will use lookup a secret from your default Vault server and then create that secret in your target Vault server, this takes two parameters. The mounts used by this should exist on the target server already
+ - Path of secret to lookup
+ - Optional parameter allowing you to change path on target server
+ 
+e.g.
+```text
+{{ LookupSecret "secret/foo" }}
+
+{{ LookupSecret "secret/bar" "alternate/path/bar" }}
+```
+
 
 This tool also includes file encryption that will allow you to encrypt the config files if they include sensitive information, this uses AES-256 CFB encryption and HMAC authenticaion from the Golang crypto library. This requires a 32 byte password that can be automatically generated if required.

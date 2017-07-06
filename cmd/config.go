@@ -21,8 +21,10 @@ import (
 	"encoding/base64"
 
 	"github.com/elliottsam/vault-config/crypto"
+	"github.com/elliottsam/vault-config/template"
 	"github.com/elliottsam/vault-config/vault"
 	"github.com/hashicorp/hcl"
+	"github.com/hashicorp/vault/api"
 	"github.com/spf13/cobra"
 )
 
@@ -69,11 +71,23 @@ decrypting those that require it
 			e.PlainText = crypto.JoinBytes(e.ReadEncryptedConfigFiles(filename), e.PlainText)
 		}
 
-		client, err := vault.NewClient()
+		g := template.InitGenerator(varFile, e.PlainText)
+		e.PlainText, err = g.GenerateConfig()
+		if err != nil {
+			log.Fatalf("Error generating config from template: %v", err)
+		}
+
+		c := api.DefaultConfig()
+		c.Address = vcVaultAddr
+		if vcVaultSkipVerify == true {
+			c.ConfigureTLS(&api.TLSConfig{Insecure: true})
+		}
+		client, err := vault.NewClient(c)
 		if err != nil {
 			log.Fatalf("Error creating Vault client: %v", err)
 
 		}
+		client.SetToken(vcVaultToken)
 
 		var vconf vault.Config
 		err = hcl.Unmarshal(e.PlainText, &vconf)
@@ -128,6 +142,7 @@ func init() {
 	RootCmd.AddCommand(configCmd)
 
 	configCmd.Flags().StringVarP(&filename, "filename", "f", "", "Filename of configuration file")
+	configCmd.Flags().StringVarP(&varFile, "varFile", "v", "vault-config.vars", "Filename of vars to be used in templates")
 	configCmd.Flags().BoolVarP(&encrypted, "encrypted", "e", false, "Is this file encrypted")
 	configCmd.Flags().StringVarP(&key, "key", "k", "", "Encryption key this must be 32 bytes")
 }

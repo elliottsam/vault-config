@@ -21,15 +21,20 @@ import (
 	"github.com/elliottsam/github"
 	"github.com/elliottsam/vault-config/version"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
-	filename   string
-	encrypted  bool
-	key        string
-	input      string
-	output     string
-	deleteFile bool
+	filename          string
+	varFile           string
+	encrypted         bool
+	key               string
+	input             string
+	output            string
+	deleteFile        bool
+	vcVaultAddr       string
+	vcVaultToken      string
+	vcVaultSkipVerify bool
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -38,7 +43,18 @@ var RootCmd = &cobra.Command{
 	Short: "vault-config is a tool for codifying the configuration of vault",
 	Long: `vault-config is a tool for codifying the configuration of vault
 configuration is defined in HCL and it utilises encryption so
-sensitive data can be pushed to github or similar`,
+sensitive data can be pushed to github or similar
+
+To configure a Vault server you need to specify the following
+environment variables
+
+VC_VAULT_ADDR        - Address of Vault server to apply config to
+VC_VAULT_TOKEN       - Token to authenticate to Vault with
+VC_VAULT_SKIP_VERIFY - Skip TLS verification
+
+The standard Vault environment variables can be configured for
+use with the templating engine, this will allow getting secrets
+from another Vault server, see the README for more information`,
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
@@ -54,5 +70,20 @@ func init() {
 	err := github.IsLatestRelease("elliottsam", "vault-config", version.Version)
 	if err != nil {
 		fmt.Println(err)
+	}
+	viper.AutomaticEnv()
+	viper.SetEnvPrefix("vc")
+	if !viper.IsSet("vault_addr") {
+		RootCmd.Help()
+	}
+	vcVaultAddr = viper.GetString("vault_addr")
+	if !viper.IsSet("vault_token") {
+		RootCmd.Help()
+	}
+	vcVaultToken = viper.GetString("vault_token")
+	if viper.IsSet("vault_skip_verify") {
+		vcVaultSkipVerify = viper.GetBool("vault_skip_verify")
+	} else {
+		vcVaultSkipVerify = false
 	}
 }
