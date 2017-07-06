@@ -5,7 +5,12 @@ As a long time user of Vault, there is one thing that I have always found a bit 
 - Use HCL to make configuration more readable
 - Ability to Encrypt/Decrypt configuration files
 
-Vault configuration for this tool will be with the same environment variable as the main Vault tool
+Vault configuration for this tool will use the following environment variables
+- VC_VAULT_ADDR - Address of Vault server to update
+- VC_VAULT_TOKEN - Token for authentication to Vault
+- VC_VAULT_SKIP_VERIFY - (Optional) Ignore SSL cert errors
+
+The default Vault variables can also be configured and will be used for getting secret information from an existing Vault server, see template section for more information
 
 ### Resources
 #### Secret
