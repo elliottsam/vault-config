@@ -1,6 +1,6 @@
 # Vault Configuration Tool
 
-As a long time user of Vault, there is one thing that I have always found a bit of an issue, Vault feels like a  codifying build configuration. it is possible to do this as documented in this [blog](https://www.hashicorp.com/blog/codifying-vault-policies-and-configuration/). After reading this I decided that method did not meet  my requirements, which were:
+As a long time user of Vault, there is one thing that I have always found a bit of an issue, Vault configuation is very manual and snowflake like it would be better to codify build configuration. it is possible to do this as documented in this [blog](https://www.hashicorp.com/blog/codifying-vault-policies-and-configuration/). After reading this I decided that method did not meet  my requirements, which were:
 - All configuration in one file
 - Use HCL to make configuration more readable
 - Ability to Encrypt/Decrypt configuration files
