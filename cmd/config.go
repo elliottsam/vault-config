@@ -72,10 +72,7 @@ decrypting those that require it
 		}
 
 		g := template.InitGenerator(varFile, e.PlainText)
-		e.PlainText, err = g.GenerateConfig()
-		if err != nil {
-			log.Fatalf("Error generating config from template: %v", err)
-		}
+		e.PlainText = g.GenerateConfig()
 
 		c := api.DefaultConfig()
 		c.Address = vcVaultAddr

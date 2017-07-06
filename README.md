@@ -151,7 +151,8 @@ testkey = "testvar"
 #### Template functions
 There are two template function available
 ##### Lookup
-This will use the variables loaded and interpolate them into a script
+This will first look for an environment variable, if that is not found, it will use variables loaded from vault-config.vars if found and interpolate them into a script
+
 e.g.
 ```hcl
 mount "app2" {
@@ -169,10 +170,10 @@ mount "app2" {
 With the vars file above will result in the following
 ```hcl
 mount "app2" {
-  path = "bar/secret"
+  path = "bar/app1"
   config {
     type = "generic"
-    description = "Example App 2"
+    description = "Example App 1"
     mountconfig {
       default_lease_ttl = "1h"
       max_lease_ttl = "24h"
