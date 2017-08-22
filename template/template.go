@@ -104,6 +104,7 @@ func (g *Generator) GenerateConfig() []byte {
 func (g *Generator) readVars(filename string) {
 	_, err := os.Stat(filename)
 	if err != nil {
+		g.vars = make(map[string]interface{})
 		return
 	}
 	vars, err := ioutil.ReadFile(filename)
@@ -114,4 +115,8 @@ func (g *Generator) readVars(filename string) {
 	if err := hcl.Unmarshal(vars, &g.vars); err != nil {
 		panic(err)
 	}
+}
+
+func (g *Generator) UpdateVarsMap(key, value string) {
+	g.vars[key] = value
 }

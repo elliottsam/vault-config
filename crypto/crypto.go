@@ -11,12 +11,10 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	mrand "math/rand"
 	"os"
 	"regexp"
 	"strings"
 	"syscall"
-	"time"
 
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -129,19 +127,15 @@ func (e *EncryptionObject) UnwrapCrypto() error {
 	return nil
 }
 
-// RandomKey returns a random password of specified length
-func RandomKey(n int) string {
-	const chars = `abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789`
+// RandomKey returns a number of random bytes
+func RandomKey(n int) []byte {
 	b := make([]byte, n)
+	rand.Reader.Read(b)
 
-	rdm := mrand.New(mrand.NewSource(time.Now().UnixNano()))
-	for i := range b {
-		b[i] = chars[rdm.Intn(len(chars))]
-	}
-
-	return string(b)
+	return b
 }
 
+// RandomKeyB64 is the same as RandomKey but returns the bytes encoded in Base64
 func RandomKeyB64(n int) string {
 	b := make([]byte, n)
 	rand.Reader.Read(b)
@@ -215,42 +209,71 @@ func (e *EncryptionObject) ReadEncryptedConfigFiles(filename string) []byte {
 }
 
 func EncryptString(data string, key []byte) (string, error) {
-	block, err := aes.NewCipher(key)
+	e := EncryptionObject{
+		Key:       key,
+		PlainText: []byte(data),
+	}
+	block, err := aes.NewCipher(e.Key)
 	if err != nil {
 		return "", fmt.Errorf("Error creating AES block: %v", err)
 	}
 
-	pt := []byte(data)
-	ct := make([]byte, aes.BlockSize+len(data))
-	iv := ct[:aes.BlockSize]
+	e.CipherText = make([]byte, aes.BlockSize+len(e.PlainText))
+	iv := e.CipherText[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		return "", fmt.Errorf("Error creating iv: %v", err)
 	}
 
 	stream := cipher.NewCFBEncrypter(block, iv)
-	stream.XORKeyStream(ct[aes.BlockSize:], pt)
+	stream.XORKeyStream(e.CipherText[aes.BlockSize:], e.PlainText)
+	e.HMAC, err = CreateHMAC(e.Key, e.CipherText)
 
-	return base64.StdEncoding.EncodeToString(ct), nil
+	//return fmt.Sprintf("@encrypted_data(%s)", base64.StdEncoding.EncodeToString(ct)), nil
+	e.WrapCrypto()
+	return fmt.Sprintf("@encrypted_data(%s)", base64.StdEncoding.EncodeToString([]byte(e.WrappedData))), nil
 }
 
-func DecryptString(cipherText string, key []byte) (string, error) {
-	block, err := aes.NewCipher(key)
+func DecryptString(WrappedText string, key []byte) (string, error) {
+	var err error
+	e := EncryptionObject{
+		Key: key,
+	}
+
+	b64wt := wrappedCipherRegex.FindStringSubmatch(WrappedText)
+	if b64wt == nil || len(b64wt) < 1 || b64wt[1] == "" {
+		return "", fmt.Errorf("unwrapping cipher text")
+	}
+
+	b64wrap, err := base64.StdEncoding.DecodeString(b64wt[1])
+	if err != nil {
+		return "", fmt.Errorf("decoding base64 cipher: %v", err)
+	}
+
+	//b64wrap, err := base64.StdEncoding.DecodeString(e.WrappedData)
+	//if err != nil {
+	//	return "", fmt.Errorf("Decoding base64 encoded wrapped data")
+	//}
+	e.WrappedData = string(b64wrap)
+	e.UnwrapCrypto()
+
+	h, _ := CreateHMAC(e.Key, e.CipherText)
+	if !hmac.Equal(e.HMAC, h) {
+		return "", fmt.Errorf("HMAC failure, ciphertext has changed, this could indicate incorrect key")
+	}
+
+	block, err := aes.NewCipher(e.Key)
 	if err != nil {
 		return "", fmt.Errorf("Error creating AES block: %v", err)
 	}
 
-	ct, err := base64.StdEncoding.DecodeString(cipherText)
-	if err != nil {
-		return "", fmt.Errorf("Error base64 decoding cipher text: %v", err)
-	}
-	iv := ct[:aes.BlockSize]
-	ct = ct[aes.BlockSize:]
+	iv := e.CipherText[:aes.BlockSize]
+	e.CipherText = e.CipherText[aes.BlockSize:]
 
-	pt := make([]byte, len(ct))
+	e.PlainText = make([]byte, len(e.CipherText))
 	stream := cipher.NewCFBDecrypter(block, iv)
-	stream.XORKeyStream(pt, ct)
+	stream.XORKeyStream(e.PlainText, e.CipherText)
 
-	return string(pt), nil
+	return string(e.PlainText), nil
 }
 
 func JoinBytes(dst, src []byte) []byte {
@@ -263,7 +286,7 @@ func JoinBytes(dst, src []byte) []byte {
 }
 
 func GetPassword() ([]byte, error) {
-	fmt.Print("Please enter key: ")
+	fmt.Print("Please enter encryption key: ")
 	bytesB64Key, err := terminal.ReadPassword(int(syscall.Stdin))
 	if err != nil {
 		return nil, fmt.Errorf("Error reading encryption key from terminal: %v", err)

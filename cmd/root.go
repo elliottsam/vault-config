@@ -73,17 +73,6 @@ func init() {
 	}
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("vc")
-	if !viper.IsSet("vault_addr") {
-		RootCmd.Help()
-	}
 	vcVaultAddr = viper.GetString("vault_addr")
-	if !viper.IsSet("vault_token") {
-		RootCmd.Help()
-	}
 	vcVaultToken = viper.GetString("vault_token")
-	if viper.IsSet("vault_skip_verify") {
-		vcVaultSkipVerify = viper.GetBool("vault_skip_verify")
-	} else {
-		vcVaultSkipVerify = false
-	}
 }

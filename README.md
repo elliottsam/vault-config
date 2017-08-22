@@ -193,5 +193,14 @@ e.g.
 {{ LookupSecret "secret/bar" "alternate/path/bar" }}
 ```
 
-
+### Encryption
 This tool also includes file encryption that will allow you to encrypt the config files if they include sensitive information, this uses AES-256 CFB encryption and HMAC authenticaion from the Golang crypto library. This requires a 32 byte password that can be automatically generated if required.
+
+To generate an encryption key use, this is a random 32bytes encoded to base64
+```text
+vault-config keygen
+Key: ntOrOotr8lcst7vJ8/VLseSaPVGGcAGZDZmnmDUQBa8=
+
+```
+
+To encrypt an entire file

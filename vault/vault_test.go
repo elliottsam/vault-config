@@ -74,9 +74,10 @@ func (vsc *vaultServerConfigTestSuite) TestVCClient_MountsAndSecrets() {
 		amttl, _ := time.ParseDuration(fmt.Sprintf("%ss", mt["max_lease_ttl"].(json.Number)))
 		assert.Equal(vsc.T(), emttl, amttl, "mttl should be equal to value from configuration")
 	} else {
-		vsc.T().Errorf("No mount found: %v")
+		vsc.T().Errorf("No mount found: %v", mount.Path)
 	}
 
+	// Test adding secrets to the vault server
 	for _, v := range vc.Secrets {
 		assert.False(vsc.T(), vsc.vtc.secretExist(v), "Secret should not exist before write: %s", v.Name)
 		err := vsc.vtc.WriteSecret(v)
@@ -86,6 +87,11 @@ func (vsc *vaultServerConfigTestSuite) TestVCClient_MountsAndSecrets() {
 		assert.NoError(vsc.T(), err, "Reading secret path should not return an error: %s", v.Name)
 		assert.Equal(vsc.T(), v.Data, secret.Data, "Secret should match input: %s", v.Name)
 	}
+
+	// Test walking vault secret mount
+	vwo, err := vsc.vtc.WalkVault("example/app1")
+	assert.NoError(vsc.T(), err, "Walking Vault should not generate any errors")
+	assert.Equal(vsc.T(), 3, len(vwo), "Walk should return 3 paths")
 }
 
 func (vsc *vaultServerConfigTestSuite) TestVCClient_Policy() {

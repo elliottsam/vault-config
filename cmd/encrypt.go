@@ -16,15 +16,16 @@ package cmd
 
 import (
 	"encoding/base64"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 
-	"fmt"
-
 	"github.com/elliottsam/vault-config/crypto"
 	"github.com/spf13/cobra"
 )
+
+var inline bool
 
 // encryptCmd represents the encrypt command
 var encryptCmd = &cobra.Command{
@@ -65,25 +66,36 @@ Will encrypt the file 'config.vc' to 'config.vc.enc'`,
 		if len(e.Key) != 32 {
 			log.Fatalln("Key must be 32 bytes")
 		}
-		file, err := ioutil.ReadFile(input)
+		e.PlainText, err = ioutil.ReadFile(input)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		e.PlainText = file
-
-		if err := e.Encrypt(); err != nil {
-			log.Fatalf("Error encrypting file: %v", err)
-		}
-		e.WrapCrypto()
-		if deleteFile {
-			os.Remove(input)
-		}
-		if output == "" {
-			output = fmt.Sprintf("%s.enc", input)
-		}
-		if err := ioutil.WriteFile(output, []byte(e.WrappedData), 0644); err != nil {
-			log.Fatalf("Error writing encrypted file to disk: %v", err)
+		if inline {
+			err = e.InlineEncryptMap("secret/data")
+			if err != nil {
+				log.Fatalf("Error performing inline encryption")
+			}
+			if output == "" {
+				output = input
+			}
+			if err := ioutil.WriteFile(output, []byte(e.CipherText), 0644); err != nil {
+				log.Fatalf("Error writing encrypted file to disk: %v", err)
+			}
+		} else {
+			if err := e.Encrypt(); err != nil {
+				log.Fatalf("Error encrypting file: %v", err)
+			}
+			e.WrapCrypto()
+			if deleteFile {
+				os.Remove(input)
+			}
+			if output == "" {
+				output = fmt.Sprintf("%s.enc", input)
+			}
+			if err := ioutil.WriteFile(output, []byte(e.WrappedData), 0644); err != nil {
+				log.Fatalf("Error writing encrypted file to disk: %v", err)
+			}
 		}
 	},
 }
@@ -95,4 +107,5 @@ func init() {
 	encryptCmd.Flags().StringVarP(&output, "output", "o", "", "Name of encrypted file to output")
 	encryptCmd.Flags().StringVarP(&key, "key", "k", "", "Key to use for encryption")
 	encryptCmd.Flags().BoolVarP(&deleteFile, "delete", "d", false, "Delete original file after encryption, if successful")
+	encryptCmd.Flags().BoolVarP(&inline, "inline", "l", false, "Use inline encryption - this only works on secrets")
 }
