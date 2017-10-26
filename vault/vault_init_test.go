@@ -76,13 +76,13 @@ func (v *vaultServerConfigTestSuite) killVaultServer() {
 func (v *vaultServerConfigTestSuite) initVaultTestClient() {
 	conf := api.DefaultConfig()
 	conf.Address = v.vaultAddress
-	c, err := api.NewClient(conf)
+	c, err := NewClient(conf)
 	if err != nil {
 		v.T().Fatalf("Error creating Vault client: %v", err)
 	}
 	c.SetToken(v.vaultToken)
 
-	v.vtc = &VCClient{c}
+	v.vtc = c
 }
 
 func TestVaultServerConfigTestSuite(t *testing.T) {
@@ -188,6 +188,22 @@ secret "test" {
 	data {
 		value = "test1"
 		password = "test2"
+	}
+}
+
+secret "test2" {
+	path = "/example/app1/test/foo/bar"
+	data {
+		value = "foo"
+		password = "bar"
+	}
+}
+
+secret "test" {
+	path = "/example/app1/bar/foo/bar/foo"
+	data {
+		value = "bar"
+		password = "foo"
 	}
 }`
 

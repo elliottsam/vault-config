@@ -20,12 +20,15 @@ import (
 
 	"encoding/base64"
 
+	"os"
+
 	"github.com/elliottsam/vault-config/crypto"
 	"github.com/elliottsam/vault-config/template"
 	"github.com/elliottsam/vault-config/vault"
 	"github.com/hashicorp/hcl"
 	"github.com/hashicorp/vault/api"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // configCmd configures Vault server with configuration provided
@@ -53,7 +56,7 @@ decrypting those that require it
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
-
+		cmdInit()
 		e := crypto.EncryptionObject{}
 		e.PlainText = e.ReadConfigFiles(filename)
 		if encrypted {
@@ -91,6 +94,28 @@ decrypting those that require it
 		if err != nil {
 			log.Fatal(fmt.Errorf("Error reading HCL: %v", err))
 		}
+
+		if vault.SecretsEncrypted(vconf) {
+			if e.Key != nil {
+				err = vconf.DecryptSecrets(e.Key)
+			} else if key != "" {
+				decodedKey, err = base64.StdEncoding.DecodeString(key)
+				if err != nil {
+					log.Fatalf("Error base64 decoding key: %v", err)
+				}
+				err = vconf.DecryptSecrets(decodedKey)
+			} else {
+				decodedKey, err = crypto.GetPassword()
+				if err != nil {
+					log.Fatalf("Error getting encryption key: %v", err)
+				}
+				err = vconf.DecryptSecrets(decodedKey)
+			}
+			if err != nil {
+				log.Fatalf("Error decrypting secrets: %v", err)
+			}
+		}
+
 		for _, m := range vconf.Mounts {
 			if ok := client.MountExist(m.Path); !ok {
 				err := client.Mount(m.Path, vault.ConvertMapStringInterface(m.Config))
@@ -123,7 +148,7 @@ decrypting those that require it
 
 		for _, v := range vconf.TokenRoles {
 			if err := client.WriteTokenRole(v); err != nil {
-				log.Fatal("Error writing token role: %v", err)
+				log.Fatalf("Error writing token role: %v", err)
 			}
 		}
 
@@ -133,6 +158,22 @@ decrypting those that require it
 			}
 		}
 	},
+}
+
+func cmdInit() {
+	if !viper.IsSet("vault_addr") {
+		RootCmd.Help()
+		os.Exit(1)
+	}
+	if !viper.IsSet("vault_token") {
+		RootCmd.Help()
+		os.Exit(1)
+	}
+	if viper.IsSet("vault_skip_verify") {
+		vcVaultSkipVerify = viper.GetBool("vault_skip_verify")
+	} else {
+		vcVaultSkipVerify = false
+	}
 }
 
 func init() {

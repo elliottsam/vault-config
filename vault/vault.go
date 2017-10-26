@@ -1,7 +1,9 @@
 package vault
 
 import (
+	"fmt"
 	"os"
+	"strings"
 
 	"github.com/hashicorp/vault/api"
 )
@@ -65,4 +67,29 @@ func NewClient(c *api.Config) (*VCClient, error) {
 	}
 
 	return &VCClient{client}, nil
+}
+
+// WalkVault will go through a specific path and return the path of all secrets
+func (c *VCClient) WalkVault(path string) (output []string, err error) {
+	s, err := c.Logical().List(path)
+	if err != nil || s == nil {
+		err = fmt.Errorf("Error reading Vault path: %s", path)
+		return
+	}
+	for _, a := range s.Data {
+		for _, v := range a.([]interface{}) {
+			if strings.HasSuffix(v.(string), "/") {
+				sp, err := c.WalkVault(fmt.Sprintf("%s/%s", path, strings.TrimSuffix(v.(string), "/")))
+				if err != nil {
+					err = fmt.Errorf("Error reading Vault path: %s/%s", path, v.(string))
+					return output, err
+				}
+				output = append(output, sp...)
+			} else {
+				output = append(output, fmt.Sprintf("%s/%s", path, v.(string)))
+			}
+		}
+	}
+
+	return
 }

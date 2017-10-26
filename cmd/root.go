@@ -16,7 +16,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/elliottsam/github"
 	"github.com/elliottsam/vault-config/version"
@@ -60,10 +59,7 @@ from another Vault server, see the README for more information`,
 // Execute adds all child commands to the root command sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	if err := RootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(-1)
-	}
+	RootCmd.Help()
 }
 
 func init() {
@@ -73,17 +69,6 @@ func init() {
 	}
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("vc")
-	if !viper.IsSet("vault_addr") {
-		RootCmd.Help()
-	}
 	vcVaultAddr = viper.GetString("vault_addr")
-	if !viper.IsSet("vault_token") {
-		RootCmd.Help()
-	}
 	vcVaultToken = viper.GetString("vault_token")
-	if viper.IsSet("vault_skip_verify") {
-		vcVaultSkipVerify = viper.GetBool("vault_skip_verify")
-	} else {
-		vcVaultSkipVerify = false
-	}
 }
