@@ -12,6 +12,8 @@ Vault configuration for this tool will use the following environment variables
 
 The default Vault variables can also be configured and will be used for getting secret information from an existing Vault server, see template section for more information
 
+Exported secrets will be converted to base64 strings to prevent issues with multiline strings or quotes in values
+
 ### Resources
 #### Secret
 This resource will add secrets to the vault server

@@ -1,13 +1,18 @@
 package vault
 
 import (
+	"encoding/base64"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/elliottsam/vault-config/crypto"
 )
 
-var wrappedCipherRegex = regexp.MustCompile(`@encrypted_data\((.*)\)`)
+var (
+	wrappedCipherRegex = regexp.MustCompile(`@encrypted_data\((.*)\)`)
+	encodedSecret      = regexp.MustCompile(`@base64\((.*)\)`)
+)
 
 type Secret struct {
 	Name string                 `hcl:",key"`
@@ -16,7 +21,17 @@ type Secret struct {
 }
 
 func (c *VCClient) WriteSecret(s Secret) error {
-	_, err := c.Logical().Write(s.Path, s.Data)
+	var err error
+	for k, v := range s.Data {
+		if encodedSecret.MatchString(v.(string)) {
+			s.Data[k], err = base64.StdEncoding.DecodeString(strings.TrimSuffix(strings.TrimPrefix(v.(string), "@base64("), ")"))
+			if err != nil {
+				return fmt.Errorf("error decoding base64 encoded secret: %v - %v", s.Name, v.(string))
+			}
+		}
+	}
+
+	_, err = c.Logical().Write(s.Path, s.Data)
 	if err != nil {
 		return fmt.Errorf("Writing secret: %s\nError: %v", s.Name, err)
 	}

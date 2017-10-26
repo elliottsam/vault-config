@@ -96,6 +96,7 @@ to quickly create a Cobra application.`,
 					log.Fatalf("Error decoding base64 key: %v", key)
 				}
 			}
+			e.Key = decodedKey
 
 			err = e.InlineEncryptMap("secret/data")
 			if err != nil {

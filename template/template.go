@@ -2,6 +2,7 @@ package template
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -52,6 +53,11 @@ func (g *Generator) templateLookupSecret(path string, targetPath ...string) (int
 	if err != nil || s == nil {
 		return nil, fmt.Errorf("reading from vault path: %s\nError: %v", path, err)
 	}
+	for k, v := range s.Data {
+		base64.StdEncoding.EncodeToString([]byte(v.(string)))
+		s.Data[k] = fmt.Sprintf("@base64(%s)", base64.StdEncoding.EncodeToString([]byte(v.(string))))
+	}
+
 	tmplSecret := secret{
 		Path: path,
 		Data: s.Data,
