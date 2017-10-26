@@ -228,7 +228,6 @@ func EncryptString(data string, key []byte) (string, error) {
 	stream.XORKeyStream(e.CipherText[aes.BlockSize:], e.PlainText)
 	e.HMAC, err = CreateHMAC(e.Key, e.CipherText)
 
-	//return fmt.Sprintf("@encrypted_data(%s)", base64.StdEncoding.EncodeToString(ct)), nil
 	e.WrapCrypto()
 	return fmt.Sprintf("@encrypted_data(%s)", base64.StdEncoding.EncodeToString([]byte(e.WrappedData))), nil
 }
@@ -249,10 +248,6 @@ func DecryptString(WrappedText string, key []byte) (string, error) {
 		return "", fmt.Errorf("decoding base64 cipher: %v", err)
 	}
 
-	//b64wrap, err := base64.StdEncoding.DecodeString(e.WrappedData)
-	//if err != nil {
-	//	return "", fmt.Errorf("Decoding base64 encoded wrapped data")
-	//}
 	e.WrappedData = string(b64wrap)
 	e.UnwrapCrypto()
 
